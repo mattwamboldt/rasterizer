@@ -1,0 +1,4 @@
+syntax: glob
+src/Experiment.vcproj.MWAMBOLDT-PC.mwamboldt.user
+src/Experiment.ncb
+src/Experiment.suo
