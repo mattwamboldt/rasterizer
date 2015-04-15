@@ -13,6 +13,7 @@ namespace Audio
 	SDL_AudioSpec audioSpec;
 	Oscillator test;
 	WaveFile wave;
+	Delay* delay;
 
 	void FillAudio(void *userData, Uint8 *audioData, int length)
 	{
@@ -21,6 +22,7 @@ namespace Audio
 		PCM16* pcmData = (PCM16*)audioData;
 		int samplecount = length / 2;
 		wave.Write(pcmData, samplecount);
+		delay->Write(pcmData, samplecount);
 	}
 
 	double sine_wave(double phase)
@@ -74,8 +76,9 @@ namespace Audio
 			return false;
 		}
 
+		delay = new Delay(1.0f, 0.5f);
 		test.SetFrequency(440);
-		wave.Load("data/bird.wav");
+		wave.Load("data/foxworthy1.wav");
 		SDL_RWops* outbuffer = SDL_RWFromFile("bird.raw", "w");
 		if(outbuffer)
 		{
@@ -349,6 +352,37 @@ namespace Audio
 				{
 					playHead = 0.0;
 				}
+			}
+		}
+	}
+
+	Delay::Delay(float time, float decay)
+		: position(0), decay(decay)
+	{
+		size = (int)(time * audioSpec.freq);
+		buffer = new PCM16[size];
+		memset(buffer, 0, size * 2);
+	}
+
+	Delay::~Delay()
+	{
+		if(buffer)
+		{
+			delete[] buffer;
+			buffer = 0;
+		}
+	}
+
+	void Delay::Write(PCM16* data, int count)
+	{
+		for(int i = 0; i < count; ++i)
+		{
+			data[i] = (PCM16)(data[i] + buffer[position] * decay);
+			buffer[position] = data[i];
+			++position;
+			if(position >= size)
+			{
+				position = 0;
 			}
 		}
 	}

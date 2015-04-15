@@ -73,6 +73,20 @@ namespace Audio
 		Uint16 bitsPerSample; //We need to scale our data if it's in another format
 		Uint32 numSamples;
 	};
+
+	class Delay
+	{
+	public:
+		Delay(float time, float decay);
+		~Delay();
+		void Write(PCM16* data, int count);
+
+	private:
+		PCM16* buffer;
+		int size;
+		int position;
+		float decay;
+	};
 }
 
 #endif
