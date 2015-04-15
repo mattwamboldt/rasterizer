@@ -38,11 +38,30 @@ namespace Audio
 		WaveFile();
 		~WaveFile();
 		bool Load(const char* path);
+		void Play(bool loop = false){ playHead = 0.0; paused = false; looping = loop; }
 		void Write(PCM16* data, int count);
+		bool IsPlaying(){ return !paused && playHead < (numSamples / numChannels);}
 
-	public:
+		float GetVolume() const { return volume; }
+		void SetVolume(float value);
+
+		float GetPitch() const { return pitch; }
+		void SetPitch(float value);
+
+		float GetPan() const { return pan; }
+		void SetPan(float value);
+
+		bool paused;
+		bool looping;
+
+	private:
 		double playHead;
 		double volume;
+		double leftGain;
+		double rightGain;
+		double pan;
+		double pitch;
+
 		PCM16* data;
 
 		//Wav header stuff

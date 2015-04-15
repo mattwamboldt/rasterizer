@@ -3,6 +3,7 @@
 #include <math.h>
 #include "debug.h"
 #include <cstring>
+#include <random>
 
 #define PI     3.14159265359
 #define TWO_PI 6.28318530718
@@ -79,13 +80,13 @@ namespace Audio
 		if(outbuffer)
 		{
 			Uint8 output[4410];
-			while(wave.playHead < (wave.numSamples / wave.numChannels))
+			while(wave.IsPlaying())
 			{
 				FillAudio(0, output, 4410);
 				SDL_RWwrite(outbuffer, output, 1, 4410);
 			}
 
-			wave.playHead = 0.0;
+			wave.Play(true);
 			SDL_RWclose(outbuffer);
 		}
 		else
@@ -125,7 +126,7 @@ namespace Audio
 	}
 
 	WaveFile::WaveFile()
-		:playHead(0.0), volume(0.5), data(0)
+		:playHead(0.0), volume(0.5), data(0), paused(true), looping(false), pitch(1.0f)
 	{}
 
 	WaveFile::~WaveFile()
@@ -146,6 +147,13 @@ namespace Audio
 		}
 
 		playHead = 0.0;
+		paused = true;
+		looping = false;
+		volume = 1.0f;
+		pitch = 1.0f;
+
+		SetPan(0.0f);
+
 		SDL_RWops* file = SDL_RWFromFile( path, "r+b" );
 		//File does not exist
 		if( file == NULL )
@@ -247,14 +255,67 @@ namespace Audio
 		return ((1-t)* v0) + (t * v1);
 	}
 
+	void WaveFile::SetVolume(float value)
+	{
+		if(value < 0.0f)
+		{
+			volume = 0.0f;
+		}
+		else if(value > 1.0f)
+		{
+			value = 1.0f;
+		}
+		else
+		{
+			volume = value;
+		}
+	}
+
+	void WaveFile::SetPitch(float value)
+	{
+		if(value < 0.25f)
+		{
+			pitch = 0.25f;
+		}
+		else if(value > 4.0f)
+		{
+			pitch = 4.0f;
+		}
+		else
+		{
+			pitch = value;
+		}
+	}
+
+	void WaveFile::SetPan(float value)
+	{
+		if(value < -1.0f)
+		{
+			pan = -1.0f;
+		}
+		else if(value > 1.0f)
+		{
+			pan = 1.0f;
+		}
+		else
+		{
+			pan = value;
+		}
+
+		// Linear panning
+		float position = pan * 0.5f;
+		leftGain = 0.5f - position;
+		rightGain = 0.5f + position;
+	}
+
 	void WaveFile::Write(PCM16* buffer, int count)
 	{
-		if(data)
+		if(data && !paused)
 		{
 			int i = 0;
 
 			//This is how many samples to increment before playing the next sample
-			double playheadIncrement =  numSamplesPerSecond / (double)audioSpec.freq;
+			double playheadIncrement =  (numSamplesPerSecond / (double)audioSpec.freq) * pitch;
 
 			while(playHead < (numSamples / numChannels) && i < count)
 			{
@@ -270,20 +331,24 @@ namespace Audio
 					nextSample = playHeadsample + numChannels; 
 				}
 
-				buffer[i] = lerp(data[playHeadsample], data[nextSample], t);
+				float leftChannel = lerp(data[playHeadsample], data[nextSample], t);
+				float rightChannel = leftChannel; //For mono we simply output the same sample to both channels
 
-				//For mono we simply output the same sample to both channels
-				if(numChannels == 1)
+				if(numChannels == 2)
 				{
-					buffer[i+1] = buffer[i];
+					rightChannel = lerp(data[playHeadsample+1], data[nextSample+1], t);
 				}
-				else
-				{
-					buffer[i+1] = lerp(data[playHeadsample+1], data[nextSample+1], t);
-				}
+
+				buffer[i] = (PCM16)(leftChannel * volume * leftGain);
+				buffer[i+1] = (PCM16)(rightChannel * volume * rightGain);
 
 				i += 2;
 				playHead += playheadIncrement;
+
+				if(playHead >= (numSamples / numChannels) && looping)
+				{
+					playHead = 0.0;
+				}
 			}
 		}
 	}
