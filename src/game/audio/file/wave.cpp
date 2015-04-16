@@ -1,132 +1,17 @@
-#include "audio.h"
-#include <SDL/SDL.h>
-#include <math.h>
-#include "debug.h"
+#include "wave.h"
+#include "../../debug.h"
 #include <cstring>
-#include <random>
-
-#define PI     3.14159265359
-#define TWO_PI 6.28318530718
 
 namespace Audio
 {
-	SDL_AudioSpec audioSpec;
-	Oscillator test;
-	WaveFile wave;
-	Delay* delay;
-
-	void FillAudio(void *userData, Uint8 *audioData, int length)
+	enum WaveFormat
 	{
-		// Clear our audio buffer to silence.
-		memset(audioData, audioSpec.silence, length);
-		PCM16* pcmData = (PCM16*)audioData;
-		int samplecount = length / 2;
-		wave.Write(pcmData, samplecount);
-		delay->Write(pcmData, samplecount);
-	}
-
-	double sine_wave(double phase)
-	{
-		return sin(phase);
-	}
-
-	double square_wave(double phase)
-	{
-		if(phase <= PI)
-		{
-			return 1.0;
-		}
-		else
-		{
-			return -1.0;
-		}
-	}
-
-	double downward_sawtooth_wave(double phase)
-	{
-		return 1.0 - 2.0 * (phase / TWO_PI);
-	}
-
-	double upward_sawtooth_wave(double phase)
-	{
-		return 2.0 * (phase / TWO_PI) - 1.0;
-	}
-
-	double triangle_wave(double phase)
-	{
-		double result = upward_sawtooth_wave(phase);
-		if(result < 0.0) result = -result;
-		return 2.0 * (result - 0.5);
-	}
-
-	bool Init()
-	{
-		//Set our initial properties
-		audioSpec.freq = 44100;
-		audioSpec.format = AUDIO_S16;
-		audioSpec.channels = 2;
-		audioSpec.samples = 4400;
-		audioSpec.callback = &FillAudio;
-
-		SDL_OpenAudio(&audioSpec, 0);
-
-		//If the audio device gives the expected format then unpause the device
-		if(audioSpec.format != AUDIO_S16)
-		{
-			return false;
-		}
-
-		delay = new Delay(1.0f, 0.5f);
-		test.SetFrequency(440);
-		wave.Load("data/foxworthy1.wav");
-		SDL_RWops* outbuffer = SDL_RWFromFile("bird.raw", "w");
-		if(outbuffer)
-		{
-			Uint8 output[4410];
-			while(wave.IsPlaying())
-			{
-				FillAudio(0, output, 4410);
-				SDL_RWwrite(outbuffer, output, 1, 4410);
-			}
-
-			wave.Play(true);
-			SDL_RWclose(outbuffer);
-		}
-		else
-		{
-			Debug::console("Failed to open cat.raw\n");
-		}
-
-		SDL_PauseAudio(0);
-		return true;
-	}
-
-	Oscillator::Oscillator() : phase(0.0), volume(0.5)
-	{
-		SetFrequency(440);
-	}
-
-	void Oscillator::SetFrequency(double frequency)
-	{
-		increment = frequency / audioSpec.freq * TWO_PI;
-	}
-
-	void Oscillator::Write(PCM16* data, int count)
-	{
-		for(int i = 0; i < count; i +=2)
-		{
-			double value = sine_wave(phase) * 32767.0 * volume;
-			data[i] = value;
-			data[i+1] = value;
-
-			phase += increment;
-
-			if(phase >= TWO_PI)
-			{
-				phase -= TWO_PI;
-			}
-		}
-	}
+		WAVE_PCM = 1,
+		WAVE_FLOAT = 3,
+		WAVE_ALAW = 6,
+		WAVE_MULAW = 7,
+		EXTENSIBLE = 0xFFFE
+	};
 
 	WaveFile::WaveFile()
 		:playHead(0.0), volume(0.5), data(0), paused(true), looping(false), pitch(1.0f)
@@ -352,37 +237,6 @@ namespace Audio
 				{
 					playHead = 0.0;
 				}
-			}
-		}
-	}
-
-	Delay::Delay(float time, float decay)
-		: position(0), decay(decay)
-	{
-		size = (int)(time * audioSpec.freq);
-		buffer = new PCM16[size];
-		memset(buffer, 0, size * 2);
-	}
-
-	Delay::~Delay()
-	{
-		if(buffer)
-		{
-			delete[] buffer;
-			buffer = 0;
-		}
-	}
-
-	void Delay::Write(PCM16* data, int count)
-	{
-		for(int i = 0; i < count; ++i)
-		{
-			data[i] = (PCM16)(data[i] + buffer[position] * decay);
-			buffer[position] = data[i];
-			++position;
-			if(position >= size)
-			{
-				position = 0;
 			}
 		}
 	}

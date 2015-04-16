@@ -1,7 +1,7 @@
 #include <SDL/SDL.h>
 #include <stdio.h>
 #include "debug.h"
-#include "audio.h"
+#include "audio/audio.h"
 
 const int SCREEN_WIDTH = 640;
 const int SCREEN_HEIGHT = 480;

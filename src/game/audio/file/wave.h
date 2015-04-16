@@ -1,37 +1,10 @@
-#ifndef AUDIO_H
-#define AUDIO_H
+#ifndef AUDIO_FILE_WAVE_H
+#define AUDIO_FILE_WAVE_H
 
-#include <SDL/SDL.h>
-
-typedef signed short PCM16;
+#include "../audio.h"
 
 namespace Audio
 {
-	enum WaveFormat
-	{
-		WAVE_PCM = 1,
-		WAVE_FLOAT = 3,
-		WAVE_ALAW = 6,
-		WAVE_MULAW = 7,
-		EXTENSIBLE = 0xFFFE
-	};
-
-	bool Init();
-
-	class Oscillator
-	{
-	public:
-		Oscillator();
-		void SetVolume(double value){volume = value;}
-		void SetFrequency(double frequency);
-		void Write(PCM16* data, int count);
-
-	private:
-		double phase;
-		double increment;
-		double volume;
-	};
-
 	class WaveFile
 	{
 	public:
@@ -72,20 +45,6 @@ namespace Audio
 		Uint16 blockAlign;
 		Uint16 bitsPerSample; //We need to scale our data if it's in another format
 		Uint32 numSamples;
-	};
-
-	class Delay
-	{
-	public:
-		Delay(float time, float decay);
-		~Delay();
-		void Write(PCM16* data, int count);
-
-	private:
-		PCM16* buffer;
-		int size;
-		int position;
-		float decay;
 	};
 }
 
