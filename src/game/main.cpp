@@ -60,6 +60,20 @@ int main( int argc, char* args[] )
 						{
 							quit = true;
 						}
+						else if( e.type == SDL_KEYDOWN )
+						{
+							Audio::MidiEvent midiEvent;
+							midiEvent.eventCode = Audio::MIDI_NOTE_ON << 4;
+							midiEvent.param1 = e.key.keysym.sym;
+							Audio::midiController.ProcessEvent(midiEvent);
+						}
+						else if( e.type == SDL_KEYUP )
+						{
+							Audio::MidiEvent midiEvent;
+							midiEvent.eventCode = Audio::MIDI_NOTE_OFF << 4;
+							midiEvent.param1 = e.key.keysym.sym;
+							Audio::midiController.ProcessEvent(midiEvent);
+						}
 					}
 					
 					//Apply the image

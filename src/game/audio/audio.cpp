@@ -4,6 +4,7 @@
 #include <cstring>
 #include <random>
 #include "file/wave.h"
+#include "file/midi.h"
 #include "effects/delay.h"
 #include "synth/oscillator.h"
 
@@ -13,6 +14,8 @@ namespace Audio
 	Oscillator test;
 	WaveFile wave;
 	Delay* delay;
+	MidiFile midi;
+	MidiController midiController;
 
 	void FillAudio(void *userData, Uint8 *audioData, int length)
 	{
@@ -20,8 +23,8 @@ namespace Audio
 		memset(audioData, audioSpec.silence, length);
 		PCM16* pcmData = (PCM16*)audioData;
 		int samplecount = length / 2;
-		wave.Write(pcmData, samplecount);
-		delay->Write(pcmData, samplecount);
+		midiController.Write(pcmData, samplecount);
+		//test.Write(pcmData, samplecount);
 	}
 
 	bool Init()
@@ -43,7 +46,10 @@ namespace Audio
 
 		delay = new Delay(1.0f, 0.5f);
 		test.SetFrequency(440);
+		test.SetVolume(1.0);
 		wave.Load("data/foxworthy1.wav");
+		midi.Load("data/megaman2.mid");
+		midiController.Init();
 		SDL_RWops* outbuffer = SDL_RWFromFile("bird.raw", "w");
 		if(outbuffer)
 		{

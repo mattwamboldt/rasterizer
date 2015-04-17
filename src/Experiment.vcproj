@@ -196,6 +196,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\game\audio\file\midi.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\game\audio\synth\midicontroller.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\game\audio\synth\oscillator.cpp"
 				>
 			</File>
@@ -222,7 +230,19 @@
 				>
 			</File>
 			<File
+				RelativePath=".\game\audio\file\midi.h"
+				>
+			</File>
+			<File
+				RelativePath=".\game\audio\synth\midicontroller.h"
+				>
+			</File>
+			<File
 				RelativePath=".\game\audio\synth\oscillator.h"
+				>
+			</File>
+			<File
+				RelativePath=".\game\audio\types.h"
 				>
 			</File>
 			<File
