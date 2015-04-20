@@ -77,7 +77,7 @@ int main( int argc, char* args[] )
 					}
 					
 					//Apply the image
-					SDL_BlitScaled( gHelloWorld, &imgRect, gScreenSurface, &screenRect );
+					//SDL_BlitScaled( gHelloWorld, &imgRect, gScreenSurface, &screenRect );
 					//Update the surface
 					SDL_UpdateWindowSurface( gWindow );
 				}

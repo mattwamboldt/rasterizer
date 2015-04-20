@@ -16,6 +16,7 @@ namespace Audio
 	Delay* delay;
 	MidiFile midi;
 	MidiController midiController;
+	SDL_RWops* outbuffer;
 
 	void FillAudio(void *userData, Uint8 *audioData, int length)
 	{
@@ -23,8 +24,10 @@ namespace Audio
 		memset(audioData, audioSpec.silence, length);
 		PCM16* pcmData = (PCM16*)audioData;
 		int samplecount = length / 2;
+		midi.Advance(&midiController);
 		midiController.Write(pcmData, samplecount);
 		//test.Write(pcmData, samplecount);
+		if(outbuffer) SDL_RWwrite(outbuffer, audioData, 1, length);
 	}
 
 	bool Init()
@@ -49,25 +52,8 @@ namespace Audio
 		test.SetVolume(1.0);
 		wave.Load("data/foxworthy1.wav");
 		midi.Load("data/megaman2.mid");
-		midiController.Init();
-		SDL_RWops* outbuffer = SDL_RWFromFile("bird.raw", "w");
-		if(outbuffer)
-		{
-			Uint8 output[4410];
-			while(wave.IsPlaying())
-			{
-				FillAudio(0, output, 4410);
-				SDL_RWwrite(outbuffer, output, 1, 4410);
-			}
-
-			wave.Play(true);
-			SDL_RWclose(outbuffer);
-		}
-		else
-		{
-			Debug::console("Failed to open cat.raw\n");
-		}
-
+		midiController.Init(&midi);
+		outbuffer = SDL_RWFromFile("bird.raw", "w");
 		SDL_PauseAudio(0);
 		return true;
 	}

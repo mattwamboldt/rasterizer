@@ -7,11 +7,12 @@
 
 namespace Audio
 {
+	class MidiController;
 	class MidiTrack
 	{
 	public:
+		void Advance(MidiController* controller);
 		MidiEvent Current(){ return events[currentEvent]; }
-		MidiEvent Advance(){ return events[++currentEvent]; }
 		
 		bool Load(SDL_RWops* file);
 	private:
@@ -25,6 +26,8 @@ namespace Audio
 		Uint8 currentByte;
 		Uint16 sequenceNumber;
 
+		Uint32 pulseCounter;
+
 		int currentEvent;
 		std::vector<MidiEvent> events;
 		std::string name;
@@ -37,11 +40,11 @@ namespace Audio
 	{
 	public:
 		bool Load(const char* path);
-		void Write(PCM16* data, int count);
+		void Advance(MidiController* controller);
+		Uint16 pulsesPerBeat;
+
 	private:
 		std::vector<MidiTrack> tracks;
-		int bpm; // Beats Per Minute
-		int ppqn; // Pulses Per Quater Note ( a quarter note is a beat )
 		Uint16 format; //Format 0 is a one track file, 1 is multitrack simul and 2 is multisong
 		Uint16 numTracks;
 	};

@@ -39,6 +39,7 @@ namespace Audio
 	bool MidiTrack::Load(SDL_RWops* file)
 	{
 		currentEvent = 0;
+		pulseCounter = 0;
 
 		char chunkID[4];
 		SDL_RWread( file, chunkID, 4, 1);
@@ -64,7 +65,7 @@ namespace Audio
 			ev.time = ReadLength(file);
 
 			//Then we read the event status
-			NextByte(file);
+			Uint32 param1 = NextByte(file);
 
 			if(IsCommandByte())
 			{
@@ -82,64 +83,67 @@ namespace Audio
 						Uint8 port = 0;
 						Uint8 channelPrefix = 0;
 
+						ev.eventCode = 0xFF;
+						ev.systemMessage = metaType;
+
 						switch(metaType)
 						{
 						case MIDI_SEQUENCE_NUM:
-							sequenceNumber = SDL_ReadBE16(file);
+							ev.param1 = SDL_ReadBE16(file);
 							numBytesRemaining -= paramlength;
-							Debug::console( "MIDI Parser: Sequence Num Event %u\n", sequenceNumber);
+							//Debug::console( "MIDI Parser: Sequence Num Event %u\n", sequenceNumber);
 							break;
 
 						case MIDI_TEXT:
 							text = ReadString(file, paramlength);
-							Debug::console( "MIDI Parser: Text Event %s\n", text.c_str() );
+							//Debug::console( "MIDI Parser: Text Event %s\n", text.c_str() );
 							break;
 
 						case MIDI_COPYRIGHT:
 							copyright = ReadString(file, paramlength);
-							Debug::console( "MIDI Parser: Copyright Event %s\n", name.c_str() );
+							//Debug::console( "MIDI Parser: Copyright Event %s\n", name.c_str() );
 							break;
 
 						case MIDI_TRACK_NAME:
 							name = ReadString(file, paramlength);
-							Debug::console( "MIDI Parser: Track Name Event %s\n", name.c_str() );
+							//Debug::console( "MIDI Parser: Track Name Event %s\n", name.c_str() );
 							break;
 
 						case MIDI_INSTRUMENT:
 							instrument = ReadString(file, paramlength);
-							Debug::console( "MIDI Parser: Instrument Event %s\n", instrument.c_str() );
+							//Debug::console( "MIDI Parser: Instrument Event %s\n", instrument.c_str() );
 							break;
 
 						case MIDI_LYRIC:
-							Debug::console( "MIDI Parser: Lyric Event\n" );
+							//Debug::console( "MIDI Parser: Lyric Event\n" );
 							SDL_RWseek(file, paramlength, RW_SEEK_CUR);
 							numBytesRemaining -= paramlength;
 							break;
 
 						case MIDI_MARKER:
-							Debug::console( "MIDI Parser: Marker Event\n" );
+							//Debug::console( "MIDI Parser: Marker Event\n" );
 							SDL_RWseek(file, paramlength, RW_SEEK_CUR);
 							numBytesRemaining -= paramlength;
 							break;
 
 						case MIDI_CUE_POINT:
-							Debug::console( "MIDI Parser: Cure Point Event\n" );
+							//Debug::console( "MIDI Parser: Cure Point Event\n" );
 							SDL_RWseek(file, paramlength, RW_SEEK_CUR);
 							numBytesRemaining -= paramlength;
 							break;
 
 						case MIDI_CHANNEL_PRE:
-							channelPrefix = NextByte(file);
-							Debug::console( "MIDI Parser: Channel Prefix Event %u\n", channelPrefix );
+							ev.param1 = NextByte(file);
+							//Debug::console( "MIDI Parser: Channel Prefix Event %u\n", channelPrefix );
 							break;
 
 						case MIDI_PORT:
-							port = NextByte(file);
-							Debug::console( "MIDI Parser: Port Event %u\n", port );
+							ev.param1 = NextByte(file);
+							//Debug::console( "MIDI Parser: Port Event %u\n", port );
 							break;
 
 						case MIDI_END_OF_TRACK:
-							Debug::console( "MIDI Parser: End of Track Event\n" );
+							//Debug::console( "MIDI Parser: End of Track Event\n" );
 							return true;
 							break;
 
@@ -150,11 +154,12 @@ namespace Audio
 							newTempo += NextByte(file);
 							newTempo <<= 8;
 							newTempo += NextByte(file);
-							Debug::console( "MIDI Parser: Set Tempo Event %u\n", newTempo );
+							ev.param1 = newTempo;
+							//Debug::console( "MIDI Parser: Set Tempo Event %u\n", newTempo );
 							break;
 
 						case MIDI_SMTPE_OFFSET:
-							Debug::console( "MIDI Parser: SMPTE Offset Event\n" );
+							//Debug::console( "MIDI Parser: SMPTE Offset Event\n" );
 							NextByte(file);
 							NextByte(file);
 							NextByte(file);
@@ -163,7 +168,7 @@ namespace Audio
 							break;
 
 						case MIDI_TIME_SIG:
-							Debug::console( "MIDI Parser: Time Signature Event\n" );
+							//Debug::console( "MIDI Parser: Time Signature Event\n" );
 							NextByte(file);
 							NextByte(file);
 							NextByte(file);
@@ -171,7 +176,7 @@ namespace Audio
 							break;
 
 						case MIDI_KEY_SIG:
-							Debug::console( "MIDI Parser: Key Signature Event\n" );
+							//Debug::console( "MIDI Parser: Key Signature Event\n" );
 							NextByte(file);
 							NextByte(file);
 							break;
@@ -179,15 +184,17 @@ namespace Audio
 						case MIDI_SYSEX_META:
 							SDL_RWseek(file, paramlength, RW_SEEK_CUR);
 							numBytesRemaining -= paramlength;
-							Debug::console( "MIDI Parser: Sequencer-Specific Meta Event\n" );
+							//Debug::console( "MIDI Parser: Sequencer-Specific Meta Event\n" );
 							break;
 
 						default:
-							Debug::console( "MIDI Parser: Unrecognized event type\n" );
+							//Debug::console( "MIDI Parser: Unrecognized event type\n" );
 							SDL_RWseek(file, paramlength, RW_SEEK_CUR);
 							numBytesRemaining -= paramlength;
 							break;
 						}
+
+						events.push_back(ev);
 					}
 					//Sysex events
 					else
@@ -204,8 +211,11 @@ namespace Audio
 				else
 				{
 					ev.eventCode = currentByte;
+					param1 = NextByte(file);
 				}
 			}
+
+			ev.param1 = param1;
 
 			//Then we check for parameters
 			switch(command)
@@ -216,17 +226,11 @@ namespace Audio
 			case MIDI_CONTROL_CHANGE:
 			case MIDI_PITCH_WHEEL:
 			case MIDI_SYSTEM:
-				ev.param1 = NextByte(file);
 				ev.param2 = NextByte(file);
-				break;
-
-			case MIDI_PROGRAM_CHANGE:
-			case MIDI_CHANNEL_PRESSURE:
-				ev.param1 = NextByte(file);
 				break;
 			}
 
-			Uint8 channel = ev.eventCode & 0x0F;
+			/*Uint8 channel = ev.eventCode & 0x0F;
 
 			switch(command)
 			{
@@ -259,7 +263,7 @@ namespace Audio
 				Debug::console( "MIDI Parser: Channel Pressure Event - Channel %u, Pressure %u\n",
 					channel, ev.param1 );
 				break;
-			}
+			}*/
 
 			events.push_back(ev);
 		}
@@ -270,7 +274,6 @@ namespace Audio
 
 	bool MidiFile::Load(const char* path)
 	{
-		bpm = 120; //Default tempo according to the midi spec
 		tracks.clear();
 		SDL_RWops* file = SDL_RWFromFile( path, "r+b" );
 		//File does not exist
@@ -315,7 +318,7 @@ namespace Audio
 			else
 			{
 				//time units per quarter note or beat
-				ppqn = timing;
+				pulsesPerBeat = timing;
 			}
 
 			for(int i = 0; i < numTracks; ++i)
@@ -330,8 +333,22 @@ namespace Audio
 		}
 	}
 
-	void MidiFile::Write(PCM16* data, int count)
+	void MidiTrack::Advance(MidiController* controller)
 	{
-	
+		++pulseCounter;
+		while(currentEvent < events.size() && pulseCounter >= Current().time)
+		{
+			controller->ProcessEvent(Current());
+			++currentEvent;
+			pulseCounter = 0;
+		}
+	}
+
+	void MidiFile::Advance(MidiController* controller)
+	{
+		for(int i = 0; i < numTracks; ++i)
+		{
+			tracks[i].Advance(controller);
+		}
 	}
 }

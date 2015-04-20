@@ -41,13 +41,20 @@ namespace Audio
 		MIDI_SYSEX_META =	0x7f
 	};
 
+	enum MidiControlMessages
+	{
+		MIDI_BANK_SELECT = 0,
+		MIDI_ALL_NOTES_OFF = 123,
+	};
+
 	struct MidiEvent
 	{
 		MidiEvent(): time(0), eventCode(0), param1(0), param2(0) {}
 		Uint32 time;
 		Uint8 eventCode;
-		Uint8 param1;
-		Uint8 param2;
+		Uint8 systemMessage;
+		Uint32 param1;
+		Uint32 param2;
 	};
 }
 #endif
