@@ -8,6 +8,9 @@
 
 namespace Audio
 {
+	double Oscillator::semitoneRatio = 0.0;
+	double Oscillator::c0 = 0.0;
+	
 	const char* midiNotes[] = {
 		"C  0","C# 0","D  0","D# 0","E  0","F  0","F# 0","G  0","G# 0","A  0","A# 0","B  0",
 		"C  1","C# 1","D  1","D# 1","E  1","F  1","F# 1","G  1","G# 1","A  1","A# 1","B  1",
@@ -22,26 +25,37 @@ namespace Audio
 		"C 10","C# 0","D 10","D#10","E 10","F 10","F#10","G 10","G#10"
 	};
 
+	void Oscillator::SetScale(Uint32 numSemitones, float refFrequency)
+	{
+		//The range of Midi is from 0 to 127, We assume Equal temperment
+		semitoneRatio = pow(2, 1.0/(float)numSemitones);
+
+		//Middle C is 3 above low A, which is half the frequency of our tuning
+		double c5 = (refFrequency / 2.0f) * pow(semitoneRatio, 3);
+		c0 = c5 * pow(0.5, 5);
+	}
+
 	void Oscillator::SetMidiNote(Uint8 note)
 	{
-		//The range of Midi is from 0 to 127
-		//For this calculation we are assuming Equal Temperment tuning with concert A at 440Hz
-
-		//12 semitones per octave
-		double semitoneRatio = pow(2, 1/12.0);
-		//Middle C is 3 above low A, which is half the frequency of our tuning
-		double c5 = 220.0 * pow(semitoneRatio, 3);
-		double c0 = c5 * pow(0.5, 5);
 		SetFrequency(c0 * pow(semitoneRatio, note));
 	}
 
-	void Oscillator::Play(Uint8 velocity)
+	void Oscillator::Press(Uint8 velocity)
 	{
 		if(!playing)
 		{
-			playing = true;
+			Debug::console("playing note\n");
+			sampleCount = 0;
 			phase = 0.0;
+			currentState = ENV_ATTACK;
+			playing = true;
 		}
+	}
+
+	void Oscillator::Release(Uint8 velocity)
+	{
+		currentState = ENV_RELEASE;
+		sampleCount = 0;
 	}
 
 	double sine_wave(double phase)
@@ -80,7 +94,17 @@ namespace Audio
 
 	Oscillator::Oscillator() : phase(0.0), volume(0.5), playing(false)
 	{
+		attack = 0;
+		decay = 0;
+		release = 0;
 		SetFrequency(440);
+	}
+
+	void Oscillator::SetADSR(BreakpointFile* atk, BreakpointFile* dec, BreakpointFile* rel)
+	{
+		attack = atk;
+		decay = dec;
+		release = rel;
 	}
 
 	void Oscillator::SetFrequency(double frequency)
@@ -88,23 +112,77 @@ namespace Audio
 		increment = frequency / audioSpec.freq * TWO_PI;
 	}
 
+	float Oscillator::GetEnvelope()
+	{
+		if(currentState == ENV_ATTACK && attack)
+		{
+			return attack->At(sampleCount).value;
+		}
+		else if(currentState == ENV_DECAY && decay)
+		{
+			return decay->At(sampleCount).value;
+		}
+		else if(currentState == ENV_SUSTAIN && decay)
+		{
+			return decay->At(decay->NumPoints() - 1).value;
+		}
+		else if(currentState == ENV_RELEASE && release)
+		{
+			return release->At(sampleCount).value;
+		}
+
+		return 1.0f;
+	}
+
 	void Oscillator::Write(PCM16* data, int count)
 	{
-		if(!playing || volume <= 0.0001) return;
+		if(!playing || volume < 0.00001) return;
 
 		for(int i = 0; i < count; i +=2)
 		{
-			double value = sine_wave(phase) * volume * 32767.0;
+			float envelope = GetEnvelope();
+			double value = sine_wave(phase) * volume * envelope;
 			double channelOne = data[i] / 32767.0;
 			double channelTwo = data[i + 1] / 32767.0;
-			data[i] = (PCM16)(value + channelOne - value * channelOne);
-			data[i+1] = (PCM16)(value + channelTwo - value * channelTwo);
+			data[i] = (value + channelOne - value * channelOne) * 32767.0;
+			data[i+1] = (value + channelTwo - value * channelTwo) * 32767.0;
 
+			//update the generator
 			phase += increment;
 
 			if(phase >= TWO_PI)
 			{
 				phase -= TWO_PI;
+			}
+
+			//Update the state of the envelope
+			++sampleCount;
+			if(currentState == ENV_ATTACK)
+			{
+				if(attack && sampleCount >= attack->NumPoints())
+				{
+					currentState = ENV_DECAY;
+					sampleCount = 0;
+				}
+			}
+			else if(currentState == ENV_DECAY)
+			{
+				if(decay && sampleCount >= decay->NumPoints())
+				{
+					currentState = ENV_SUSTAIN;
+					sampleCount = 0;
+				}
+			}
+			else if(currentState == ENV_RELEASE)
+			{
+				if(release)
+				{
+					playing = sampleCount >= release->NumPoints();
+				}
+				else
+				{
+					playing = false;
+				}
 			}
 		}
 	}

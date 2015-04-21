@@ -7,6 +7,7 @@
 #include "file/midi.h"
 #include "effects/delay.h"
 #include "synth/oscillator.h"
+#include "file/breakpoint.h"
 
 namespace Audio
 {
@@ -17,6 +18,7 @@ namespace Audio
 	MidiFile midi;
 	MidiController midiController;
 	SDL_RWops* outbuffer;
+	BreakpointFile breapoints;
 
 	void FillAudio(void *userData, Uint8 *audioData, int length)
 	{
@@ -24,7 +26,7 @@ namespace Audio
 		memset(audioData, audioSpec.silence, length);
 		PCM16* pcmData = (PCM16*)audioData;
 		int samplecount = length / 2;
-		midi.Advance(&midiController);
+		//midi.Advance(&midiController);
 		midiController.Write(pcmData, samplecount);
 		//test.Write(pcmData, samplecount);
 		if(outbuffer) SDL_RWwrite(outbuffer, audioData, 1, length);
@@ -52,7 +54,9 @@ namespace Audio
 		test.SetVolume(1.0);
 		wave.Load("data/foxworthy1.wav");
 		midi.Load("data/megaman2.mid");
-		midiController.Init(&midi);
+		breapoints.GenerateCurve(3, 1000, 1, 0);
+		breapoints.Write("data/test.txt");
+		midiController.Init(/*&midi*/);
 		outbuffer = SDL_RWFromFile("bird.raw", "w");
 		SDL_PauseAudio(0);
 		return true;

@@ -184,6 +184,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\game\audio\file\breakpoint.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\game\debug.cpp"
 				>
 			</File>
@@ -197,6 +201,10 @@
 			</File>
 			<File
 				RelativePath=".\game\audio\file\midi.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\game\audio\synth\midichannel.cpp"
 				>
 			</File>
 			<File
@@ -222,6 +230,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\game\audio\file\breakpoint.h"
+				>
+			</File>
+			<File
 				RelativePath=".\game\debug.h"
 				>
 			</File>
@@ -231,6 +243,10 @@
 			</File>
 			<File
 				RelativePath=".\game\audio\file\midi.h"
+				>
+			</File>
+			<File
+				RelativePath=".\game\audio\synth\midichannel.h"
 				>
 			</File>
 			<File

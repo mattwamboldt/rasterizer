@@ -17,23 +17,21 @@ namespace Audio
 
 	void MidiController::Init(MidiFile* file)
 	{
+		Oscillator::SetScale();
 		timePerSample = 1.0 / audioSpec.freq;
 		timePerBeat = 500000; //initially 120 bpm
 		timeSincePulse = 0.0f;
 		midiFile = file;
 		RefreshPulseRate();
+
 		if(midiFile)
 		{
 			midiFile->Advance(this);
 		}
 
-		for(int channel = 0; channel < NUM_MIDI_CHANNELS; ++channel)
+		for(int i = 0; i < NUM_MIDI_CHANNELS; ++i)
 		{
-			channelVolumes[i] = 0;
-			for(int note = 0; note < NUM_MIDI_NOTES; ++note)
-			{
-				notes[channel][note].SetMidiNote(note);
-			}
+			channels[i].Init();
 		}
 	}
 
@@ -45,18 +43,11 @@ namespace Audio
 		switch(command)
 		{
 		case MIDI_NOTE_ON:
-			if(e.param2 == 0) //This is a hack the midi spec uses to abuse running status for mild compression
-			{
-				notes[channel][e.param1].Stop(64);
-			}
-			else
-			{
-				notes[channel][e.param1].Play(e.param2);
-			}
+			channels[channel].NoteOn(e.param1, e.param2);
 			break;
 
 		case MIDI_NOTE_OFF:
-			notes[channel][e.param1].Stop(e.param2);
+			channels[channel].NoteOff(e.param1, e.param2);
 			break;
 		
 		case MIDI_CONTROL_CHANGE:
@@ -85,21 +76,18 @@ namespace Audio
 		}
 	}
 
-	void MidiController::AllNotesOff(Uint8 channel)
-	{
-		for(int note = 0; note < NUM_MIDI_NOTES; ++note)
-		{
-			notes[channel][note].Stop(0);
-		}
-	}
-
 	void MidiController::ControlChange(Uint8 channel, Uint8 controller, Uint8 value)
 	{
 		switch(controller)
 		{
-		case MIDI_ALL_NOTES_OFF:
-			AllNotesOff(channel);
+		case MIDI_CHANNEL_VOLUME:
+			channels[channel].SetVolume(value / 127.0);
 			break;
+
+		case MIDI_ALL_NOTES_OFF:
+			channels[channel].AllNotesOff();
+			break;
+
 		default:
 			Debug::console("MIDI Controller: Control Change not yet implemented %u\n", controller);
 		}
@@ -109,14 +97,16 @@ namespace Audio
 	{
 		Uint32 samplesWritten = 0;
 		Uint32 numSamplesToWrite = (timePerPulse - timeSincePulse) / timePerSample;
+		if(!midiFile)
+		{
+			numSamplesToWrite = count;
+		}
+
 		while(samplesWritten < count && numSamplesToWrite + samplesWritten < count)
 		{
-			for(int channel = 0; channel < NUM_MIDI_CHANNELS; ++channel)
+			for(int i = 0; i < NUM_MIDI_CHANNELS; ++i)
 			{
-				for(int note = 0; note < NUM_MIDI_NOTES; ++note)
-				{
-					notes[channel][note].Write(data + samplesWritten, numSamplesToWrite);
-				}
+				channels[i].Write(data + samplesWritten, numSamplesToWrite);
 			}
 
 			samplesWritten += numSamplesToWrite;
@@ -132,12 +122,9 @@ namespace Audio
 
 		if(samplesWritten < count)
 		{
-			for(int channel = 0; channel < NUM_MIDI_CHANNELS; ++channel)
+			for(int i = 0; i < NUM_MIDI_CHANNELS; ++i)
 			{
-				for(int note = 0; note < NUM_MIDI_NOTES; ++note)
-				{
-					notes[channel][note].Write(data + samplesWritten, count - samplesWritten);
-				}
+				channels[i].Write(data + samplesWritten, count - samplesWritten);
 			}
 
 			timeSincePulse += timePerSample * (count - samplesWritten);

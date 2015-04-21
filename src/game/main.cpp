@@ -65,6 +65,7 @@ int main( int argc, char* args[] )
 							Audio::MidiEvent midiEvent;
 							midiEvent.eventCode = Audio::MIDI_NOTE_ON << 4;
 							midiEvent.param1 = e.key.keysym.sym;
+							midiEvent.param2 = 64;
 							Audio::midiController.ProcessEvent(midiEvent);
 						}
 						else if( e.type == SDL_KEYUP )
@@ -72,6 +73,7 @@ int main( int argc, char* args[] )
 							Audio::MidiEvent midiEvent;
 							midiEvent.eventCode = Audio::MIDI_NOTE_OFF << 4;
 							midiEvent.param1 = e.key.keysym.sym;
+							midiEvent.param2 = 64;
 							Audio::midiController.ProcessEvent(midiEvent);
 						}
 					}

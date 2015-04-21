@@ -2,10 +2,8 @@
 #define AUDIO_SYNTH_MIDI
 
 #include "../types.h"
-#include "oscillator.h"
-
-#define NUM_MIDI_CHANNELS 16
-#define NUM_MIDI_NOTES 128
+#include "midichannel.h"
+#include "../file/breakpoint.h"
 
 namespace Audio
 {
@@ -25,8 +23,7 @@ namespace Audio
 
 		void AllNotesOff(Uint8 channel);
 
-		Audio::Oscillator notes[NUM_MIDI_CHANNELS][NUM_MIDI_NOTES];
-		float channelVolumes[NUM_MIDI_CHANNELS];
+		MidiChannel channels[NUM_MIDI_CHANNELS];
 
 		//Timers used to clock the event pump
 		Uint32 timePerBeat; //measured in microseconds

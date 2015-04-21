@@ -3,6 +3,9 @@
 
 #include <SDL/SDL.h>
 
+#define NUM_MIDI_CHANNELS 16
+#define NUM_MIDI_NOTES 128
+
 typedef signed short PCM16;
 
 namespace Audio
@@ -44,6 +47,7 @@ namespace Audio
 	enum MidiControlMessages
 	{
 		MIDI_BANK_SELECT = 0,
+		MIDI_CHANNEL_VOLUME = 7,
 		MIDI_ALL_NOTES_OFF = 123,
 	};
 
