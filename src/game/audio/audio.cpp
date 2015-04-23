@@ -6,13 +6,13 @@
 #include "file/wave.h"
 #include "file/midi.h"
 #include "effects/delay.h"
-#include "synth/oscillator.h"
+#include "synth/midinote.h"
 #include "file/breakpoint.h"
 
 namespace Audio
 {
 	SDL_AudioSpec audioSpec;
-	Oscillator test;
+	MidiNote test;
 	WaveFile wave;
 	Delay* delay;
 	MidiFile midi;
@@ -38,7 +38,7 @@ namespace Audio
 		SDL_RWops* testfile = SDL_RWFromFile(path, "w");
 		if(testfile)
 		{
-			Oscillator osc;
+			MidiNote osc;
 			osc.SetFrequency(440);
 			osc.SetVolume(1.0);
 			osc.Press(64);
@@ -72,7 +72,7 @@ namespace Audio
 			return false;
 		}
 
-		Oscillator::SetSamplingRate(audioSpec.freq);
+		MidiNote::SetSamplingRate(audioSpec.freq);
 
 		WriteTone("data/test.raw");
 

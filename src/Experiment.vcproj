@@ -212,7 +212,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\game\audio\synth\oscillator.cpp"
+				RelativePath=".\game\audio\synth\midinote.cpp"
 				>
 			</File>
 			<File
@@ -258,7 +258,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\game\audio\synth\oscillator.h"
+				RelativePath=".\game\audio\synth\midinote.h"
 				>
 			</File>
 			<File

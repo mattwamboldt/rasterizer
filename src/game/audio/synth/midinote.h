@@ -1,5 +1,5 @@
-#ifndef AUDIO_SYNTH_OSCILLATOR
-#define AUDIO_SYNTH_OSCILLATOR
+#ifndef AUDIO_SYNTH_MIDINOTE
+#define AUDIO_SYNTH_MIDINOTE
 
 #include "../types.h"
 #include "../file/breakpoint.h"
@@ -28,10 +28,10 @@ namespace Audio
 		DOWNSAW_WAVE,
 	};
 
-	class Oscillator
+	class MidiNote
 	{
 	public:
-		Oscillator();
+		MidiNote();
 		void SetVolume(double value){volume = value;}
 		void Press(Uint8 velocity);
 		void Release(Uint8 velocity);

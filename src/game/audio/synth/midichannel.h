@@ -1,7 +1,7 @@
 #ifndef AUDIO_SYNTH_MIDICHANNEL_H
 #define AUDIO_SYNTH_MIDICHANNEL_H
 
-#include "oscillator.h"
+#include "midinote.h"
 
 namespace Audio
 {
@@ -22,7 +22,7 @@ namespace Audio
 		void Write(PCM16* data, int count);
 
 	private:
-		Audio::Oscillator notes[NUM_MIDI_NOTES];
+		MidiNote notes[NUM_MIDI_NOTES];
 		float volume;
 		BreakpointFile attack;
 		BreakpointFile decay;

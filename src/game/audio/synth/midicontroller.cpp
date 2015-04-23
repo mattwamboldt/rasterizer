@@ -17,7 +17,7 @@ namespace Audio
 
 	void MidiController::Init(MidiFile* file)
 	{
-		Oscillator::SetScale();
+		MidiNote::SetScale();
 		timePerSample = 1.0 / audioSpec.freq;
 		timePerBeat = 500000; //initially 120 bpm
 		timeSincePulse = 0.0f;

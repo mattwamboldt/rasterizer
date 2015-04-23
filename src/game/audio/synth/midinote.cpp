@@ -1,4 +1,4 @@
-#include "oscillator.h"
+#include "midinote.h"
 #include <math.h>
 #include "../audio.h"
 #include "../../debug.h"
@@ -8,9 +8,9 @@
 
 namespace Audio
 {
-	double Oscillator::semitoneRatio = 0.0;
-	double Oscillator::c0 = 0.0;
-	double Oscillator::samplingRadians = TWO_PI / 44100.0; //Assume a base rate of cd quality
+	double MidiNote::semitoneRatio = 0.0;
+	double MidiNote::c0 = 0.0;
+	double MidiNote::samplingRadians = TWO_PI / 44100.0; //Assume a base rate of cd quality
 	
 	const char* midiNotes[] = {
 		"C  0","C# 0","D  0","D# 0","E  0","F  0","F# 0","G  0","G# 0","A  0","A# 0","B  0",
@@ -26,7 +26,7 @@ namespace Audio
 		"C 10","C# 0","D 10","D#10","E 10","F 10","F#10","G 10","G#10"
 	};
 
-	void Oscillator::SetScale(Uint32 numSemitones, float refFrequency)
+	void MidiNote::SetScale(Uint32 numSemitones, float refFrequency)
 	{
 		//The range of Midi is from 0 to 127, We assume Equal temperment
 		semitoneRatio = pow(2, 1.0/(float)numSemitones);
@@ -36,12 +36,12 @@ namespace Audio
 		c0 = c5 * pow(0.5, 5);
 	}
 
-	void Oscillator::SetMidiNote(Uint8 note)
+	void MidiNote::SetMidiNote(Uint8 note)
 	{
 		SetFrequency(c0 * pow(semitoneRatio, note));
 	}
 
-	void Oscillator::Press(Uint8 velocity)
+	void MidiNote::Press(Uint8 velocity)
 	{
 		if(!playing)
 		{
@@ -53,7 +53,7 @@ namespace Audio
 		}
 	}
 
-	void Oscillator::Release(Uint8 velocity)
+	void MidiNote::Release(Uint8 velocity)
 	{
 		currentState = ENV_RELEASE;
 		sampleCount = 0;
@@ -88,7 +88,7 @@ namespace Audio
 		return 2.0 * (result - 0.5);
 	}
 
-	Oscillator::Oscillator() : phase(0.0), volume(0.5), playing(false)
+	MidiNote::MidiNote() : phase(0.0), volume(0.5), playing(false)
 	{
 		attack = 0;
 		decay = 0;
@@ -97,19 +97,19 @@ namespace Audio
 		SetWaveType(TRIANGLE_WAVE);
 	}
 
-	void Oscillator::SetADSR(BreakpointFile* atk, BreakpointFile* dec, BreakpointFile* rel)
+	void MidiNote::SetADSR(BreakpointFile* atk, BreakpointFile* dec, BreakpointFile* rel)
 	{
 		attack = atk;
 		decay = dec;
 		release = rel;
 	}
 
-	void Oscillator::SetSamplingRate(double sr)
+	void MidiNote::SetSamplingRate(double sr)
 	{
 		samplingRadians = TWO_PI / sr;
 	}
 
-	void Oscillator::SetWaveType(WaveType value)
+	void MidiNote::SetWaveType(WaveType value)
 	{
 		switch(value)
 		{
@@ -136,13 +136,13 @@ namespace Audio
 		}
 	}
 
-	void Oscillator::SetFrequency(double freq)
+	void MidiNote::SetFrequency(double freq)
 	{
 		frequency = freq;
 		increment = frequency * samplingRadians;
 	}
 
-	float Oscillator::GetEnvelope()
+	float MidiNote::GetEnvelope()
 	{
 		if(currentState == ENV_ATTACK && attack)
 		{
@@ -164,7 +164,7 @@ namespace Audio
 		return 1.0f;
 	}
 
-	double Oscillator::NextSample(double freq)
+	double MidiNote::NextSample(double freq)
 	{
 		double value = waveFunction(phase);
 
@@ -188,7 +188,7 @@ namespace Audio
 		return value;
 	}
 
-	void Oscillator::Write(PCM16* data, int count)
+	void MidiNote::Write(PCM16* data, int count)
 	{
 		if(!playing || volume < 0.00001) return;
 
