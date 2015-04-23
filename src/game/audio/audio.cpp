@@ -38,6 +38,11 @@ namespace Audio
 		SDL_RWops* testfile = SDL_RWFromFile(path, "w");
 		if(testfile)
 		{
+			BreakpointFile ampEnv;
+			ampEnv.Load("data/kickdrum.txt");
+			ampEnv.SetSamplingRate(audioSpec.freq);
+			ampEnv.ResetStream();
+
 			Oscillator osc;
 
 			//We want to generate 5 seconds of audio for testing
@@ -47,7 +52,7 @@ namespace Audio
 
 			for(int i = 0; i < numSamples; ++i)
 			{
-				buffer[i] = osc.NextSample() * 32767;
+				buffer[i] = osc.NextSample() * ampEnv.NextSample() * 32767;
 			}
 
 			SDL_RWwrite(testfile, buffer, 2, numSamples);

@@ -25,6 +25,13 @@ namespace Audio
 		void Scale(float value);
 
 		float Value(float time);
+
+		//These are used when you want to read this like a stream
+		//More efficient for sequential access than the value function
+		void SetSamplingRate(Uint32 samplesPerSecond);
+		void ResetStream();
+		float NextSample();
+
 		void Add(const Breakpoint& point) { points.push_back(point); }
 
 		void GenerateCurve(double duration, Uint32 numPoints, double startVal, double endVal);
@@ -35,6 +42,14 @@ namespace Audio
 		std::vector<Breakpoint> points;
 		Uint32 low;
 		Uint32 high;
+
+		//used for stream mode
+		double currentTime;
+		Uint32 left;
+		Uint32 right;
+		double increment;
+		float width;
+		float height;
 	};
 }
 

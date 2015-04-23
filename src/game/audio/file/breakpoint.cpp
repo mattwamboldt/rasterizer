@@ -149,6 +149,50 @@ namespace Audio
 		return true;
 	}
 
+	void BreakpointFile::SetSamplingRate(Uint32 samplesPerSecond)
+	{
+		increment = 1.0 / samplesPerSecond;
+	}
+
+	void BreakpointFile::ResetStream()
+	{
+		currentTime = 0.0f;
+		left = 0;
+		right = 1;
+		width = points[right].time - points[left].time;
+	}
+
+	float BreakpointFile::NextSample()
+	{
+		if(currentTime > points[right].time)
+		{
+			return points[right].value;
+		}
+
+		float currentValue;
+		if(width == 0.0f)
+		{
+			currentValue = points[right].value;
+		}
+		else
+		{
+			currentValue = lerp(points[left].value, points[right].value, (float)(currentTime - points[left].time) / width);
+		}
+
+		currentTime += increment;
+
+		if(currentTime > points[right].time)
+		{
+			if(right + 1 < points.size())
+			{
+				++left; ++right;
+				width = points[right].time - points[left].time;
+			}
+		}
+
+		return currentValue;
+	}
+
 	bool BreakpointFile::Write(const char* path)
 	{
 		std::fstream file;
