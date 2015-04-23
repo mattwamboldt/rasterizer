@@ -60,5 +60,23 @@ namespace Audio
 		Uint32 param1;
 		Uint32 param2;
 	};
+
+	enum EnvelopeState
+	{
+		ENV_ATTACK,
+		ENV_DECAY,
+		ENV_SUSTAIN,
+		ENV_RELEASE,
+		ENV_NONE
+	};
+
+	enum WaveType
+	{
+		SINE_WAVE,
+		SQUARE_WAVE,
+		TRIANGLE_WAVE,
+		UPSAW_WAVE,
+		DOWNSAW_WAVE,
+	};
 }
 #endif

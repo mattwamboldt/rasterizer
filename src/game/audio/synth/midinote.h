@@ -3,31 +3,10 @@
 
 #include "../types.h"
 #include "../file/breakpoint.h"
-
-//TODO: Separate the oscillator from the midi implementation details
+#include "oscillator.h"
 
 namespace Audio
 {
-	typedef double (*ValueGenerator)(double);
-
-	enum EnvelopeState
-	{
-		ENV_ATTACK,
-		ENV_DECAY,
-		ENV_SUSTAIN,
-		ENV_RELEASE,
-		ENV_NONE
-	};
-
-	enum WaveType
-	{
-		SINE_WAVE,
-		SQUARE_WAVE,
-		TRIANGLE_WAVE,
-		UPSAW_WAVE,
-		DOWNSAW_WAVE,
-	};
-
 	class MidiNote
 	{
 	public:
@@ -37,7 +16,6 @@ namespace Audio
 		void Release(Uint8 velocity);
 		void Stop() { playing = false; }
 		
-		void SetFrequency(double frequency);
 		void SetMidiNote(Uint8 note);
 		void SetWaveType(WaveType value);
 
@@ -46,22 +24,15 @@ namespace Audio
 		void SetADSR(BreakpointFile* atk, BreakpointFile* dec, BreakpointFile* rel);
 
 		static void SetScale(Uint32 numSemitones = 12, float refFrequency = 440.0f);
-		static void SetSamplingRate(double sr);
 
 	private:
 		float GetEnvelope();
-		double NextSample(double freq);
 
 		static double semitoneRatio;
 		static double c0;
-		static double samplingRadians;
 
-		double phase;
-		double increment;
 		double volume;
-		double frequency;
-
-		ValueGenerator waveFunction;
+		Oscillator wave;
 
 		bool playing;
 		EnvelopeState currentState;

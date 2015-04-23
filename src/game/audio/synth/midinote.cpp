@@ -10,7 +10,6 @@ namespace Audio
 {
 	double MidiNote::semitoneRatio = 0.0;
 	double MidiNote::c0 = 0.0;
-	double MidiNote::samplingRadians = TWO_PI / 44100.0; //Assume a base rate of cd quality
 	
 	const char* midiNotes[] = {
 		"C  0","C# 0","D  0","D# 0","E  0","F  0","F# 0","G  0","G# 0","A  0","A# 0","B  0",
@@ -38,7 +37,7 @@ namespace Audio
 
 	void MidiNote::SetMidiNote(Uint8 note)
 	{
-		SetFrequency(c0 * pow(semitoneRatio, note));
+		wave.SetFrequency(c0 * pow(semitoneRatio, note));
 	}
 
 	void MidiNote::Press(Uint8 velocity)
@@ -47,7 +46,7 @@ namespace Audio
 		{
 			Debug::console("playing note\n");
 			sampleCount = 0;
-			phase = 0.0;
+			wave.Reset();
 			currentState = ENV_ATTACK;
 			playing = true;
 		}
@@ -59,42 +58,11 @@ namespace Audio
 		sampleCount = 0;
 	}
 
-	double square_wave(double phase)
-	{
-		if(phase <= PI)
-		{
-			return 1.0;
-		}
-		else
-		{
-			return -1.0;
-		}
-	}
-
-	double downward_sawtooth_wave(double phase)
-	{
-		return 1.0 - 2.0 * (phase / TWO_PI);
-	}
-
-	double upward_sawtooth_wave(double phase)
-	{
-		return 2.0 * (phase / TWO_PI) - 1.0;
-	}
-
-	double triangle_wave(double phase)
-	{
-		double result = upward_sawtooth_wave(phase);
-		if(result < 0.0) result = -result;
-		return 2.0 * (result - 0.5);
-	}
-
-	MidiNote::MidiNote() : phase(0.0), volume(0.5), playing(false)
+	MidiNote::MidiNote() : volume(0.5), playing(false)
 	{
 		attack = 0;
 		decay = 0;
 		release = 0;
-		SetFrequency(440);
-		SetWaveType(TRIANGLE_WAVE);
 	}
 
 	void MidiNote::SetADSR(BreakpointFile* atk, BreakpointFile* dec, BreakpointFile* rel)
@@ -104,42 +72,9 @@ namespace Audio
 		release = rel;
 	}
 
-	void MidiNote::SetSamplingRate(double sr)
-	{
-		samplingRadians = TWO_PI / sr;
-	}
-
 	void MidiNote::SetWaveType(WaveType value)
 	{
-		switch(value)
-		{
-		case SQUARE_WAVE:
-			waveFunction = &square_wave;
-			break;
-
-		case UPSAW_WAVE:
-			waveFunction = &upward_sawtooth_wave;
-			break;
-
-		case DOWNSAW_WAVE:
-			waveFunction = &downward_sawtooth_wave;
-			break;
-
-		case TRIANGLE_WAVE:
-			waveFunction = &triangle_wave;
-			break;
-
-		case SINE_WAVE:
-		default:
-			waveFunction = &sin;
-			break;
-		}
-	}
-
-	void MidiNote::SetFrequency(double freq)
-	{
-		frequency = freq;
-		increment = frequency * samplingRadians;
+		wave.SetWaveType(value);
 	}
 
 	float MidiNote::GetEnvelope()
@@ -164,30 +99,6 @@ namespace Audio
 		return 1.0f;
 	}
 
-	double MidiNote::NextSample(double freq)
-	{
-		double value = waveFunction(phase);
-
-		if(freq != frequency)
-		{
-			SetFrequency(freq);
-		}
-
-		phase += increment;
-
-		if(phase >= TWO_PI)
-		{
-			phase -= TWO_PI;
-		}
-
-		if(phase < 0.0)
-		{
-			phase += TWO_PI;
-		}
-
-		return value;
-	}
-
 	void MidiNote::Write(PCM16* data, int count)
 	{
 		if(!playing || volume < 0.00001) return;
@@ -195,7 +106,7 @@ namespace Audio
 		for(int i = 0; i < count; i +=2)
 		{
 			float envelope = GetEnvelope();
-			double value = NextSample(frequency) * volume * envelope;
+			double value = wave.NextSample(wave.GetFrequency()) * volume * envelope;
 			double channelOne = data[i] / 32767.0;
 			double channelTwo = data[i + 1] / 32767.0;
 			data[i] = (value + channelOne - value * channelOne) * 32767.0;

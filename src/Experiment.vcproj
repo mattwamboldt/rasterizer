@@ -216,6 +216,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\game\audio\synth\oscillator.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\game\audio\util.cpp"
 				>
 			</File>
@@ -259,6 +263,10 @@
 			</File>
 			<File
 				RelativePath=".\game\audio\synth\midinote.h"
+				>
+			</File>
+			<File
+				RelativePath=".\game\audio\synth\oscillator.h"
 				>
 			</File>
 			<File

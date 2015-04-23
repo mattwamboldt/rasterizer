@@ -8,11 +8,12 @@
 #include "effects/delay.h"
 #include "synth/midinote.h"
 #include "file/breakpoint.h"
+#include "synth/oscillator.h"
 
 namespace Audio
 {
 	SDL_AudioSpec audioSpec;
-	MidiNote test;
+	Oscillator test;
 	WaveFile wave;
 	Delay* delay;
 	MidiFile midi;
@@ -29,7 +30,6 @@ namespace Audio
 		int samplecount = length / 2;
 		//midi.Advance(&midiController);
 		midiController.Write(pcmData, samplecount);
-		//test.Write(pcmData, samplecount);
 		if(outbuffer) SDL_RWwrite(outbuffer, audioData, 1, length);
 	}
 
@@ -38,17 +38,17 @@ namespace Audio
 		SDL_RWops* testfile = SDL_RWFromFile(path, "w");
 		if(testfile)
 		{
-			MidiNote osc;
-			osc.SetFrequency(440);
-			osc.SetVolume(1.0);
-			osc.Press(64);
+			Oscillator osc;
 
 			//We want to generate 5 seconds of audio for testing
-			Uint32 numSamples = audioSpec.freq * 2 * 5;
+			Uint32 numSamples = audioSpec.freq * 5;
 			PCM16* buffer = new PCM16[numSamples];
 			memset(buffer, audioSpec.silence, numSamples * 2);
 
-			osc.Write(buffer, numSamples);
+			for(int i = 0; i < numSamples; ++i)
+			{
+				buffer[i] = osc.NextSample() * 32767;
+			}
 
 			SDL_RWwrite(testfile, buffer, 2, numSamples);
 			SDL_RWclose(testfile);
@@ -72,13 +72,11 @@ namespace Audio
 			return false;
 		}
 
-		MidiNote::SetSamplingRate(audioSpec.freq);
+		Oscillator::SetSamplingRate(audioSpec.freq);
 
 		WriteTone("data/test.raw");
 
 		delay = new Delay(1.0f, 0.5f);
-		test.SetFrequency(440);
-		test.SetVolume(1.0);
 		pantest.Load("data/pan.txt");
 
 		wave.Load("data/foxworthy1.wav");
