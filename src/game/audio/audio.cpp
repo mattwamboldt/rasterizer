@@ -19,6 +19,7 @@ namespace Audio
 	MidiController midiController;
 	SDL_RWops* outbuffer;
 	BreakpointFile breapoints;
+	BreakpointFile pantest;
 
 	void FillAudio(void *userData, Uint8 *audioData, int length)
 	{
@@ -30,6 +31,28 @@ namespace Audio
 		midiController.Write(pcmData, samplecount);
 		//test.Write(pcmData, samplecount);
 		if(outbuffer) SDL_RWwrite(outbuffer, audioData, 1, length);
+	}
+
+	void WriteTone(char* path)
+	{
+		SDL_RWops* testfile = SDL_RWFromFile(path, "w");
+		if(testfile)
+		{
+			Oscillator osc;
+			osc.SetFrequency(440);
+			osc.SetVolume(1.0);
+			osc.Press(64);
+
+			//We want to generate 5 seconds of audio for testing
+			Uint32 numSamples = audioSpec.freq * 2 * 5;
+			PCM16* buffer = new PCM16[numSamples];
+			memset(buffer, audioSpec.silence, numSamples * 2);
+
+			osc.Write(buffer, numSamples);
+
+			SDL_RWwrite(testfile, buffer, 2, numSamples);
+			SDL_RWclose(testfile);
+		}
 	}
 
 	bool Init()
@@ -49,13 +72,20 @@ namespace Audio
 			return false;
 		}
 
+		Oscillator::SetSamplingRate(audioSpec.freq);
+
+		WriteTone("data/test.raw");
+
 		delay = new Delay(1.0f, 0.5f);
 		test.SetFrequency(440);
 		test.SetVolume(1.0);
+		pantest.Load("data/pan.txt");
+
 		wave.Load("data/foxworthy1.wav");
+		wave.panFile = &pantest;
+		wave.Play(false);
+
 		midi.Load("data/megaman2.mid");
-		breapoints.GenerateCurve(3, 1000, 1, 0);
-		breapoints.Write("data/test.txt");
 		midiController.Init(/*&midi*/);
 		outbuffer = SDL_RWFromFile("bird.raw", "w");
 		SDL_PauseAudio(0);

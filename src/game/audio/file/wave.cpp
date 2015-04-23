@@ -1,6 +1,10 @@
 #include "wave.h"
 #include "../../debug.h"
+#include "../util.h"
 #include <cstring>
+#include <math.h>
+
+//TODO: Separate the file reading from the sound itself so that generic functions can be applied to the read buffer
 
 namespace Audio
 {
@@ -14,7 +18,7 @@ namespace Audio
 	};
 
 	WaveFile::WaveFile()
-		:playHead(0.0), volume(0.5), data(0), paused(true), looping(false), pitch(1.0f)
+		:playHead(0.0), volume(0.5), data(0), paused(true), looping(false), pitch(1.0f), panFile(0)
 	{}
 
 	WaveFile::~WaveFile()
@@ -115,17 +119,40 @@ namespace Audio
 
 			if(bytesPerSample == 1)
 			{
-				for(int i = 0; i < numSamples; ++i)
+				//We scale 8 bit samples to work in 16
+				for(Uint32 i = 0; i < numSamples; ++i)
 				{
 					data[i] = (((Uint16)SDL_ReadU8(file)) - 128) << 8;
 				}
+
+				blockAlign *= 2;
+				nAvgBytesPerSecond *= 2;
+				bytesPerSample = 2;
+				bitsPerSample = 16;
 			}
 			else if(bytesPerSample == 2)
 			{
-				for(int i = 0; i < numSamples; ++i)
+				for(Uint32 i = 0; i < numSamples; ++i)
 				{
 					data[i] = SDL_ReadLE16(file);
 				}
+			}
+			else if(bytesPerSample == 3)
+			{
+				Sint32 fullSample;
+				for(Uint32 i = 0; i < numSamples; ++i)
+				{
+					fullSample = 0;
+					fullSample |= SDL_ReadU8(file) << 8;
+					fullSample |= SDL_ReadU8(file) << 16;
+					fullSample |= SDL_ReadU8(file) << 24;
+					data[i] = (fullSample / 2147483648.0f) * 32767.0f;
+				}
+				
+				blockAlign = 2 * numChannels;
+				nAvgBytesPerSecond = numSamplesPerSecond * blockAlign;
+				bytesPerSample = 2;
+				bitsPerSample = 16;
 			}
 			else
 			{
@@ -138,9 +165,71 @@ namespace Audio
 		}
 	}
 
-	double lerp(double v0, double v1, double t)
+	bool WaveFile::Write(const char* path)
 	{
-		return ((1-t)* v0) + (t * v1);
+		if(!data) return false;
+		
+		SDL_RWops* file = SDL_RWFromFile( path, "w+b" );
+		if( file == NULL )
+		{
+			Debug::console( "Warning: Unable to open file! SDL Error: %s\n", SDL_GetError() );
+	        return false;
+		}
+
+		Uint32 headerSize = 16;
+		Uint32 dataSize = numSamples * sizeof(PCM16);
+
+		SDL_RWwrite( file, "RIFF", 4, 1);
+
+		//We ignore the size here
+		SDL_WriteLE32( file, headerSize + numSamples + 20);
+
+		SDL_RWwrite( file, "WAVE", 4, 1);
+		SDL_RWwrite( file, "fmt ", 4, 1);
+
+		//We only care about the first 16 bytes for pcm support
+		SDL_WriteLE32(file, headerSize);
+
+		SDL_WriteLE16(file, format);
+		SDL_WriteLE16(file, numChannels);
+		SDL_WriteLE32(file, numSamplesPerSecond);
+		SDL_WriteLE32(file, nAvgBytesPerSecond);
+		SDL_WriteLE16(file, blockAlign);
+		SDL_WriteLE16(file, bitsPerSample);
+		
+		SDL_RWwrite( file, "data", 4, 1);
+		SDL_WriteLE32( file, dataSize );
+
+		for(Uint32 i = 0; i < numSamples; ++i)
+		{
+			SDL_WriteLE16(file, data[i]);
+		}
+
+		SDL_RWclose( file );
+		return true;
+	}
+
+	bool WaveFile::WriteEnvelope(const char* path, Uint32 sampleRateMS)
+	{
+		BreakpointFile file;
+		Breakpoint newPoint;
+		
+		float timePerFrame = sampleRateMS / 1000.0f;
+		Uint32 samplesPerFrame = timePerFrame * numSamplesPerSecond;
+
+		Uint32 sampleOffset = 0;
+		float time = 0.0f;
+
+		while(sampleOffset < numSamples)
+		{
+			newPoint.time = time;
+			newPoint.value = Peak(samplesPerFrame, sampleOffset) / 32768.0f;
+			sampleOffset += samplesPerFrame;
+			time += timePerFrame;
+			file.Add(newPoint);
+		}
+
+		return file.Write(path);
 	}
 
 	void WaveFile::SetVolume(float value)
@@ -190,10 +279,21 @@ namespace Audio
 			pan = value;
 		}
 
-		// Linear panning
-		float position = pan * 0.5f;
-		leftGain = 0.5f - position;
-		rightGain = 0.5f + position;
+		// Constant Power Panning
+		const double piOver4 = atan(1.0); // each channel is 1/4 of a cycle
+		const double root2Over2 = sqrt(2.0) * 0.5;
+
+		// scales the pan to the right range
+		double angle = pan * piOver4;
+		double cosAngle = cos(angle);
+		double sinAngle = sin(angle);
+		leftGain = root2Over2 * (cosAngle - sinAngle);
+		rightGain = root2Over2 * (cosAngle + sinAngle);
+
+		// Linear panning (for reference)
+		// float position = pan * 0.5f;
+		// leftGain = 0.5f - position;
+		// rightGain = 0.5f + position;
 	}
 
 	void WaveFile::Write(PCM16* buffer, int count)
@@ -215,8 +315,8 @@ namespace Audio
 				//We do a lerp to scale the audio
 				if(playHeadsample < (numSamples / numChannels) - 1)
 				{
-					t = playHead - playHeadsample;
-					nextSample = playHeadsample + numChannels; 
+					t = playHead - (playHeadsample / (float)numChannels);
+					nextSample = playHeadsample + numChannels;
 				}
 
 				float leftChannel = lerp(data[playHeadsample], data[nextSample], t);
@@ -225,6 +325,11 @@ namespace Audio
 				if(numChannels == 2)
 				{
 					rightChannel = lerp(data[playHeadsample+1], data[nextSample+1], t);
+				}
+
+				if(panFile)
+				{
+					SetPan(panFile->Value(playHead / numSamplesPerSecond));
 				}
 
 				buffer[i] = (PCM16)(leftChannel * volume * leftGain);
@@ -238,6 +343,42 @@ namespace Audio
 					playHead = 0.0;
 				}
 			}
+		}
+	}
+
+	PCM16 WaveFile::Peak(Uint32 count, Uint32 offset)
+	{
+		PCM16 peak = 0;
+		PCM16 absval = 0;
+		for(Uint32 i = 0; i < count && i + offset < numSamples; ++i)
+		{
+			absval = abs(data[i + offset]);
+			if(absval > peak)
+			{
+				peak = absval;
+			}
+		}
+
+		return peak;
+	}
+
+	void WaveFile::Normalize(double decibels)
+	{
+		//We don't do anything above peak
+		if(decibels > 0.0) return;
+
+		//converts from db to amplitude
+		float maxAmplitude = pow(10.0, decibels/20.0);
+
+		PCM16 peak = Peak(numSamples);
+
+		//We don't process silent files
+		if(peak == 0) return;
+
+		float scale = maxAmplitude / (peak / 32768.0f);
+		for(Uint32 i = 0; i < numSamples; ++i)
+		{
+			data[i] *= scale;
 		}
 	}
 }

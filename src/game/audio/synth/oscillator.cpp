@@ -10,6 +10,7 @@ namespace Audio
 {
 	double Oscillator::semitoneRatio = 0.0;
 	double Oscillator::c0 = 0.0;
+	double Oscillator::samplingRadians = TWO_PI / 44100.0; //Assume a base rate of cd quality
 	
 	const char* midiNotes[] = {
 		"C  0","C# 0","D  0","D# 0","E  0","F  0","F# 0","G  0","G# 0","A  0","A# 0","B  0",
@@ -58,11 +59,6 @@ namespace Audio
 		sampleCount = 0;
 	}
 
-	double sine_wave(double phase)
-	{
-		return sin(phase);
-	}
-
 	double square_wave(double phase)
 	{
 		if(phase <= PI)
@@ -98,6 +94,7 @@ namespace Audio
 		decay = 0;
 		release = 0;
 		SetFrequency(440);
+		SetWaveType(TRIANGLE_WAVE);
 	}
 
 	void Oscillator::SetADSR(BreakpointFile* atk, BreakpointFile* dec, BreakpointFile* rel)
@@ -107,9 +104,42 @@ namespace Audio
 		release = rel;
 	}
 
-	void Oscillator::SetFrequency(double frequency)
+	void Oscillator::SetSamplingRate(double sr)
 	{
-		increment = frequency / audioSpec.freq * TWO_PI;
+		samplingRadians = TWO_PI / sr;
+	}
+
+	void Oscillator::SetWaveType(WaveType value)
+	{
+		switch(value)
+		{
+		case SQUARE_WAVE:
+			waveFunction = &square_wave;
+			break;
+
+		case UPSAW_WAVE:
+			waveFunction = &upward_sawtooth_wave;
+			break;
+
+		case DOWNSAW_WAVE:
+			waveFunction = &downward_sawtooth_wave;
+			break;
+
+		case TRIANGLE_WAVE:
+			waveFunction = &triangle_wave;
+			break;
+
+		case SINE_WAVE:
+		default:
+			waveFunction = &sin;
+			break;
+		}
+	}
+
+	void Oscillator::SetFrequency(double freq)
+	{
+		frequency = freq;
+		increment = frequency * samplingRadians;
 	}
 
 	float Oscillator::GetEnvelope()
@@ -134,6 +164,30 @@ namespace Audio
 		return 1.0f;
 	}
 
+	double Oscillator::NextSample(double freq)
+	{
+		double value = waveFunction(phase);
+
+		if(freq != frequency)
+		{
+			SetFrequency(freq);
+		}
+
+		phase += increment;
+
+		if(phase >= TWO_PI)
+		{
+			phase -= TWO_PI;
+		}
+
+		if(phase < 0.0)
+		{
+			phase += TWO_PI;
+		}
+
+		return value;
+	}
+
 	void Oscillator::Write(PCM16* data, int count)
 	{
 		if(!playing || volume < 0.00001) return;
@@ -141,19 +195,11 @@ namespace Audio
 		for(int i = 0; i < count; i +=2)
 		{
 			float envelope = GetEnvelope();
-			double value = sine_wave(phase) * volume * envelope;
+			double value = NextSample(frequency) * volume * envelope;
 			double channelOne = data[i] / 32767.0;
 			double channelTwo = data[i + 1] / 32767.0;
 			data[i] = (value + channelOne - value * channelOne) * 32767.0;
 			data[i+1] = (value + channelTwo - value * channelTwo) * 32767.0;
-
-			//update the generator
-			phase += increment;
-
-			if(phase >= TWO_PI)
-			{
-				phase -= TWO_PI;
-			}
 
 			//Update the state of the envelope
 			++sampleCount;

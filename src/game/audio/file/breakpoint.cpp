@@ -4,6 +4,7 @@
 #include <math.h>
 
 #include "../../debug.h"
+#include "../util.h"
 
 namespace Audio
 {
@@ -19,6 +20,67 @@ namespace Audio
 		}
 
 		return max;
+	}
+	
+	Breakpoint BreakpointFile::MinPoint()
+	{
+		Breakpoint min = {0.0f, 0.0f};
+		for(int i = 0; i < points.size(); ++i)
+		{
+			if(min.value > points[i].value)
+			{
+				min = points[i];
+			}
+		}
+
+		return min;
+	}
+
+	bool BreakpointFile::InRange(float min, float max)
+	{
+		for(int i = 0; i < points.size(); ++i)
+		{
+			if(points[i].value > max || points[i].value < min)
+			{
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	float BreakpointFile::Value(float time)
+	{
+		Uint32 numPoints = points.size();
+		if(numPoints < 2) return 0.0f;
+
+		if(points[low].time < time)
+		{
+			low = 0;
+			high = 1;
+		}
+		
+		while(high < numPoints && time > points[high].time)
+		{
+			++low;
+			++high;
+		}
+
+		if( high == numPoints || time < points[low].time )
+		{
+			return points[low].value;
+		}
+
+		Breakpoint left = points[low];
+		Breakpoint right = points[high];
+
+		float span = right.time - left.time;
+		if(span == 0.0f)
+		{
+			return right.value;
+		}
+
+		return lerp(left.value, right.value, (time - left.time) / span);
 	}
 
 	void BreakpointFile::Scale(float value)
