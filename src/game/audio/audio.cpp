@@ -9,6 +9,7 @@
 #include "synth/midinote.h"
 #include "file/breakpoint.h"
 #include "synth/oscillator.h"
+#include "synth/signalgenerator.h"
 
 namespace Audio
 {
@@ -33,33 +34,6 @@ namespace Audio
 		if(outbuffer) SDL_RWwrite(outbuffer, audioData, 1, length);
 	}
 
-	void WriteTone(char* path)
-	{
-		SDL_RWops* testfile = SDL_RWFromFile(path, "w");
-		if(testfile)
-		{
-			BreakpointFile ampEnv;
-			ampEnv.Load("data/kickdrum.txt");
-			ampEnv.SetSamplingRate(audioSpec.freq);
-			ampEnv.ResetStream();
-
-			Oscillator osc;
-
-			//We want to generate 5 seconds of audio for testing
-			Uint32 numSamples = audioSpec.freq * 5;
-			PCM16* buffer = new PCM16[numSamples];
-			memset(buffer, audioSpec.silence, numSamples * 2);
-
-			for(int i = 0; i < numSamples; ++i)
-			{
-				buffer[i] = osc.NextSample() * ampEnv.NextSample() * 32767;
-			}
-
-			SDL_RWwrite(testfile, buffer, 2, numSamples);
-			SDL_RWclose(testfile);
-		}
-	}
-
 	bool Init()
 	{
 		//Set our initial properties
@@ -79,7 +53,19 @@ namespace Audio
 
 		Oscillator::SetSamplingRate(audioSpec.freq);
 
-		WriteTone("data/test.raw");
+		BreakpointFile pulsemod;
+		pulsemod.Load("data/pulsewidth.txt");
+		pulsemod.SetSamplingRate(audioSpec.freq);
+		pulsemod.ResetStream();
+
+		SignalGenerator generator;
+		generator.SetDuration(15.0f);
+		generator.SetTremolo(10.0);
+		
+		generator.WriteTone("data/tremolo_test.raw");
+
+		generator.SetPulseWidthModulation(&pulsemod);
+		generator.WriteTone("data/pulse_test.raw", SQUARE_WAVE);
 
 		delay = new Delay(1.0f, 0.5f);
 		pantest.Load("data/pan.txt");

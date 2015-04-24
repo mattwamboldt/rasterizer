@@ -164,9 +164,9 @@ namespace Audio
 
 	float BreakpointFile::NextSample()
 	{
-		if(currentTime > points[right].time)
+		if(right > points.size())
 		{
-			return points[right].value;
+			return points[left].value;
 		}
 
 		float currentValue;

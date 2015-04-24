@@ -5,7 +5,7 @@
 
 namespace Audio
 {
-	typedef double (*ValueGenerator)(double);
+	typedef double (*ValueGenerator)(double, double);
 
 	class Oscillator
 	{
@@ -15,6 +15,8 @@ namespace Audio
 		void Reset(){ phase = 0.0; }
 		void SetFrequency(double frequency);
 		void SetWaveType(WaveType value);
+		void SetPulseWidth(double pw);
+
 		double NextSample(double freq);
 		double NextSample();
 
@@ -28,6 +30,7 @@ namespace Audio
 		double phase;
 		double increment;
 		double frequency;
+		double pulseWidth;
 
 		ValueGenerator waveFunction;
 	};
