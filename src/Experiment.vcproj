@@ -235,6 +235,10 @@
 				RelativePath=".\game\audio\file\wave.cpp"
 				>
 			</File>
+			<File
+				RelativePath=".\game\audio\synth\wavetable.cpp"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -295,6 +299,10 @@
 			</File>
 			<File
 				RelativePath=".\game\audio\file\wave.h"
+				>
+			</File>
+			<File
+				RelativePath=".\game\audio\synth\wavetable.h"
 				>
 			</File>
 		</Filter>

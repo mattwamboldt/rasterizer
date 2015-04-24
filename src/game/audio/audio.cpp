@@ -11,6 +11,7 @@
 #include "synth/oscillator.h"
 #include "synth/signalgenerator.h"
 #include "synth/oscillatorbank.h"
+#include "synth/wavetable.h"
 
 #include <time.h>
 
@@ -55,6 +56,7 @@ namespace Audio
 		}
 
 		Oscillator::SetSamplingRate(audioSpec.freq);
+		WaveTable::SetSamplingRate(audioSpec.freq);
 
 		BreakpointFile arpeggio;
 		arpeggio.Load("data/frequency.txt");

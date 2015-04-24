@@ -1,6 +1,7 @@
 #ifndef AUDIO_SYNTH_OSCILLATORBANK
 #define AUDIO_SYNTH_OSCILLATORBANK
 
+#include "../types.h"
 #include "oscillator.h"
 #include "../file/breakpoint.h"
 #include <vector>
