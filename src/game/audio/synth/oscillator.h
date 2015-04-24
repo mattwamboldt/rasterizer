@@ -12,7 +12,7 @@ namespace Audio
 	public:
 		Oscillator();
 
-		void Reset(){ phase = 0.0; }
+		void Reset(double startphase = 0.0){ phase = TWO_PI * startphase; }
 		void SetFrequency(double frequency);
 		void SetWaveType(WaveType value);
 		void SetPulseWidth(double pw);

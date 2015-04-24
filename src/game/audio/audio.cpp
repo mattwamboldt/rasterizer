@@ -10,6 +10,9 @@
 #include "file/breakpoint.h"
 #include "synth/oscillator.h"
 #include "synth/signalgenerator.h"
+#include "synth/oscillatorbank.h"
+
+#include <time.h>
 
 namespace Audio
 {
@@ -53,19 +56,19 @@ namespace Audio
 
 		Oscillator::SetSamplingRate(audioSpec.freq);
 
-		BreakpointFile pulsemod;
-		pulsemod.Load("data/pulsewidth.txt");
-		pulsemod.SetSamplingRate(audioSpec.freq);
-		pulsemod.ResetStream();
+		BreakpointFile arpeggio;
+		arpeggio.Load("data/frequency.txt");
+		arpeggio.SetSamplingRate(audioSpec.freq);
+		arpeggio.ResetStream();
 
-		SignalGenerator generator;
-		generator.SetDuration(15.0f);
-		generator.SetTremolo(10.0);
-		
-		generator.WriteTone("data/tremolo_test.raw");
-
-		generator.SetPulseWidthModulation(&pulsemod);
-		generator.WriteTone("data/pulse_test.raw", SQUARE_WAVE);
+		clock_t startTime = clock();
+		OscillatorBank triangle;
+		triangle.Init(5, TRIANGLE_WAVE);
+		triangle.SetDuration(15.0f);
+		triangle.SetFrequencyModulation(&arpeggio);
+		triangle.WriteTone("data/additive_triangle.raw");
+		clock_t endTime = clock();
+		Debug::console("TIME: triangle synthesis time %f seconds\n", (endTime - startTime)/(double)CLOCKS_PER_SEC);
 
 		delay = new Delay(1.0f, 0.5f);
 		pantest.Load("data/pan.txt");

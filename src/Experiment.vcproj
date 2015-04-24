@@ -220,6 +220,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\game\audio\synth\oscillatorbank.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\game\audio\synth\signalgenerator.cpp"
 				>
 			</File>
@@ -271,6 +275,10 @@
 			</File>
 			<File
 				RelativePath=".\game\audio\synth\oscillator.h"
+				>
+			</File>
+			<File
+				RelativePath=".\game\audio\synth\oscillatorbank.h"
 				>
 			</File>
 			<File

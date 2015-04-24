@@ -6,6 +6,9 @@
 #define NUM_MIDI_CHANNELS 16
 #define NUM_MIDI_NOTES 128
 
+#define PI     3.14159265359
+#define TWO_PI 6.28318530718
+
 typedef signed short PCM16;
 
 namespace Audio

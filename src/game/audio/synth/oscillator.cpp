@@ -3,9 +3,6 @@
 #include "../audio.h"
 #include "../../debug.h"
 
-#define PI     3.14159265359
-#define TWO_PI 6.28318530718
-
 namespace Audio
 {
 	double Oscillator::samplingRadians = TWO_PI / 44100.0; //Assume a base rate of cd quality
