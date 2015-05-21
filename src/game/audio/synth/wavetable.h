@@ -11,11 +11,20 @@ namespace Audio
 		WaveTable();
 
 		void Reset(double startphase = 0.0){ phase = TABLELENGTH * startphase; }
+
 		double NextSample();
 		double NextSample(double freq);
 
 		void SetFrequency(double frequency);
 		double GetFrequency(){ return frequency; };
+
+		void Normalize();
+
+		//lets us handle custom write functions
+		//This may be better handled by using function pointers to generate our samples
+		//but that'll get figured out in the long term and this is more flexible
+		double& operator[](unsigned long index){ return table[index]; }
+
 		static void SetSamplingRate(double sr);
 
 	private:
@@ -25,7 +34,7 @@ namespace Audio
 		double increment;
 		double frequency;
 
-		double table[TABLELENGTH];
+		double table[TABLELENGTH + 1];
 	};
 }
 

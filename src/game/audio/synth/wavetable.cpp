@@ -6,19 +6,32 @@ namespace Audio
 {
 	double WaveTable::sampleIncrement = TABLELENGTH / 44100.0; //Assume a base rate of cd quality
 
-	//For now we fill the table with a basic sin wave, later this will be altered to
-	//allow complex harmonics and such
 	WaveTable::WaveTable()
 	{
+		SDL_memset(table, 0, sizeof(double) * (TABLELENGTH + 1));
 		phase = 0.0;
+		SetFrequency(440);
+	}
 
-		double step = TWO_PI / TABLELENGTH;
-		for(Uint32 i = 0; i < TABLELENGTH; ++i)
+	void WaveTable::Normalize()
+	{
+		double maxAmp = 0.0;
+		for (unsigned long i = 0; i < TABLELENGTH; ++i)
 		{
-			table[i] = sin(step * i);
+			if (table[i] > maxAmp)
+			{
+				maxAmp = table[i];
+			}
 		}
 
-		SetFrequency(440);
+		maxAmp = 1.0 / maxAmp;
+
+		for (unsigned long i = 0; i < TABLELENGTH; ++i)
+		{
+			table[i] *= maxAmp;
+		}
+
+		table[TABLELENGTH] = table[0];
 	}
 
 	void WaveTable::SetSamplingRate(double sr)
@@ -28,10 +41,19 @@ namespace Audio
 
 	double WaveTable::NextSample()
 	{
-		double value = table[(int)phase];
+		//Linear interpolating wavetable
+		int base = (int)phase;
+		int next = base + 1;
+
+		double t = phase - base;
+		double value = table[base];
+		double slope = table[next] - value;
+		value += t * slope;
+
 		phase += increment;
 		while(phase >= TABLELENGTH) phase -= TABLELENGTH;
-		while(phase < 0) phase += TABLELENGTH;
+		while(phase < 0.0) phase += TABLELENGTH;
+
 		return value;
 	}
 

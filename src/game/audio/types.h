@@ -81,5 +81,8 @@ namespace Audio
 		UPSAW_WAVE,
 		DOWNSAW_WAVE,
 	};
+
+	typedef double(*ValueGenerator)(double, double);
+	typedef double(*ScaleFunc)(double);
 }
 #endif

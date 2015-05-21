@@ -4,3 +4,8 @@ src/Experiment.ncb
 src/Experiment.suo
 test/**
 obj/**
+bin/**
+src/Experiment.vcxproj.*
+src/Experiment.v12.suo
+src/Experiment.sdf
+src/Experiment.opensdf

@@ -5,8 +5,9 @@
 
 namespace Audio
 {
-	typedef double (*ValueGenerator)(double, double);
-
+	//Represents a purely mathematical Oscillator which generates
+	//values according to a wave function, has issues with speed and noise at
+	//high frequencies for some of the wave functions
 	class Oscillator
 	{
 	public:

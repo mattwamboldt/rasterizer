@@ -1,43 +1,11 @@
 #include "oscillator.h"
-#include <math.h>
-#include "../audio.h"
-#include "../../debug.h"
+#include "..\audio.h"
+#include "..\..\debug.h"
+#include "..\wavefunctions.h"
 
 namespace Audio
 {
 	double Oscillator::samplingRadians = TWO_PI / 44100.0; //Assume a base rate of cd quality
-
-	double sin_wave(double phase, double pulseWidth)
-	{
-		return sin(phase);
-	}
-
-	double square_wave(double phase, double pulseWidth)
-	{
-		if(phase <= TWO_PI * pulseWidth)
-		{
-			return 1.0;
-		}
-
-		return -1.0;
-	}
-
-	double downward_sawtooth_wave(double phase, double pulseWidth)
-	{
-		return 1.0 - 2.0 * (phase / TWO_PI);
-	}
-
-	double upward_sawtooth_wave(double phase, double pulseWidth)
-	{
-		return 2.0 * (phase / TWO_PI) - 1.0;
-	}
-
-	double triangle_wave(double phase, double pulseWidth)
-	{
-		double result = upward_sawtooth_wave(phase, pulseWidth);
-		if(result < 0.0) result = -result;
-		return 2.0 * (result - 0.5);
-	}
 
 	Oscillator::Oscillator() : phase(0.0), pulseWidth(0.5)
 	{

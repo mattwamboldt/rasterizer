@@ -1,6 +1,7 @@
 #include "audio.h"
 #include <SDL/SDL.h>
 #include "../debug.h"
+#include "../perftimer.h"
 #include <cstring>
 #include <random>
 #include "file/wave.h"
@@ -40,6 +41,8 @@ namespace Audio
 
 	bool Init()
 	{
+		PerfTimer::Init();
+		PerfTimer audio_init("Audio::Init");
 		//Set our initial properties
 		audioSpec.freq = 44100;
 		audioSpec.format = AUDIO_S16;
@@ -63,13 +66,13 @@ namespace Audio
 		arpeggio.SetSamplingRate(audioSpec.freq);
 		arpeggio.ResetStream();
 
-		clock_t startTime = clock();
+		clock_t endTime, startTime = clock();
 		OscillatorBank triangle;
-		triangle.Init(5, TRIANGLE_WAVE);
+		triangle.Init(5, UPSAW_WAVE);
 		triangle.SetDuration(15.0f);
 		triangle.SetFrequencyModulation(&arpeggio);
 		triangle.WriteTone("data/additive_triangle.raw");
-		clock_t endTime = clock();
+		endTime = clock();
 		Debug::console("TIME: triangle synthesis time %f seconds\n", (endTime - startTime)/(double)CLOCKS_PER_SEC);
 
 		delay = new Delay(1.0f, 0.5f);

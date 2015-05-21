@@ -157,36 +157,46 @@ namespace Audio
 	void BreakpointFile::ResetStream()
 	{
 		currentTime = 0.0f;
-		left = 0;
+		leftPoint = points[0];
+		rightPoint = points[1];
 		right = 1;
-		width = points[right].time - points[left].time;
+		width = rightPoint.time - leftPoint.time;
+		height = rightPoint.value - leftPoint.value;
+		morePoints = true;
 	}
 
 	float BreakpointFile::NextSample()
 	{
-		if(right > points.size())
+		if (!morePoints)
 		{
-			return points[left].value;
+			return leftPoint.value;
 		}
 
 		float currentValue;
 		if(width == 0.0f)
 		{
-			currentValue = points[right].value;
+			currentValue = rightPoint.value;
 		}
 		else
 		{
-			currentValue = lerp(points[left].value, points[right].value, (float)(currentTime - points[left].time) / width);
+			float t = (float)(currentTime - leftPoint.time) / width;
+			currentValue = leftPoint.value + t * height;
 		}
 
 		currentTime += increment;
 
-		if(currentTime > points[right].time)
+		if (currentTime > rightPoint.time)
 		{
-			if(right + 1 < points.size())
+			leftPoint = points[right];
+			++right;
+
+			morePoints = right < points.size();
+
+			if (morePoints)
 			{
-				++left; ++right;
-				width = points[right].time - points[left].time;
+				rightPoint = points[right];
+				width = rightPoint.time - leftPoint.time;
+				height = rightPoint.value - leftPoint.value;
 			}
 		}
 

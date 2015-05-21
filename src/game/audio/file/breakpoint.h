@@ -21,6 +21,7 @@ namespace Audio
 		bool InRange(float min, float max);
 
 		Uint32 NumPoints(){ return points.size(); }
+		inline bool HasMorePoints(){ return morePoints; }
 		const Breakpoint& At(Uint32 index){ return points[index]; }
 		void Scale(float value);
 
@@ -47,9 +48,12 @@ namespace Audio
 		double currentTime;
 		Uint32 left;
 		Uint32 right;
+		Breakpoint leftPoint;
+		Breakpoint rightPoint;
 		double increment;
 		float width;
 		float height;
+		bool morePoints;
 	};
 }
 

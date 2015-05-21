@@ -8,7 +8,6 @@ namespace Debug
 	enum Category
 	{
 		APPLICATION = SDL_LOG_CATEGORY_APPLICATION, //application
-		ERROR = SDL_LOG_CATEGORY_ERROR, //error log
 		SYSTEM = SDL_LOG_CATEGORY_SYSTEM, //system log
 		AUDIO = SDL_LOG_CATEGORY_AUDIO, //audio log
 		VIDEO = SDL_LOG_CATEGORY_VIDEO, //video log
