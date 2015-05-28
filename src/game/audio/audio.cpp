@@ -13,6 +13,7 @@
 #include "synth/signalgenerator.h"
 #include "synth/oscillatorbank.h"
 #include "synth/wavetable.h"
+#include "synth/wavebank.h"
 
 #include <time.h>
 
@@ -28,6 +29,9 @@ namespace Audio
 	BreakpointFile breapoints;
 	BreakpointFile pantest;
 
+	WaveHeader outputTestHeader;
+	WaveFile outputTest;
+
 	void FillAudio(void *userData, Uint8 *audioData, int length)
 	{
 		// Clear our audio buffer to silence.
@@ -35,12 +39,20 @@ namespace Audio
 		PCM16* pcmData = (PCM16*)audioData;
 		int samplecount = length / 2;
 		//midi.Advance(&midiController);
-		midiController.Write(pcmData, samplecount);
+		wave.Write(pcmData, samplecount);
 		if(outbuffer) SDL_RWwrite(outbuffer, audioData, 1, length);
 	}
 
 	bool Init()
 	{
+		outputTestHeader.bitsPerSample = 16;
+		outputTestHeader.blockAlign = 2;
+		outputTestHeader.format = WAVE_PCM;
+		outputTestHeader.numChannels = 1;
+		outputTestHeader.numSamplesPerSecond = 44100;
+		outputTestHeader.nAvgBytesPerSecond = outputTestHeader.numSamplesPerSecond * 2;
+		outputTest.Init(outputTestHeader);
+
 		PerfTimer::Init();
 		PerfTimer audio_init("Audio::Init");
 		//Set our initial properties
@@ -67,24 +79,15 @@ namespace Audio
 		arpeggio.ResetStream();
 
 		clock_t endTime, startTime = clock();
-		OscillatorBank triangle;
-		triangle.Init(5, UPSAW_WAVE);
-		triangle.SetDuration(15.0f);
-		triangle.SetFrequencyModulation(&arpeggio);
-		triangle.WriteTone("data/additive_triangle.raw");
+		WaveBank test;
+		test.AddWave(TRIANGLE_WAVE);
+		test.SetDuration(5.0f);
+		test.SetFrequencyModulation(&arpeggio);
+		test.Write(outputTest);
 		endTime = clock();
-		Debug::console("TIME: triangle synthesis time %f seconds\n", (endTime - startTime)/(double)CLOCKS_PER_SEC);
+		Debug::console("TIME: triangle synthesis time %f seconds\n", (endTime - startTime) / (double)CLOCKS_PER_SEC);
+		outputTest.Write("test.wav");
 
-		delay = new Delay(1.0f, 0.5f);
-		pantest.Load("data/pan.txt");
-
-		wave.Load("data/foxworthy1.wav");
-		wave.panFile = &pantest;
-		wave.Play(false);
-
-		midi.Load("data/megaman2.mid");
-		midiController.Init(/*&midi*/);
-		outbuffer = SDL_RWFromFile("bird.raw", "w");
 		SDL_PauseAudio(0);
 		return true;
 	}

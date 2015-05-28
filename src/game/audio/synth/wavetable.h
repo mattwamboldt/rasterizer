@@ -27,8 +27,12 @@ namespace Audio
 
 		static void SetSamplingRate(double sr);
 
+		void SetVolume(double value);
+
 	private:
 		static double sampleIncrement;
+
+		double volume;
 
 		double phase;
 		double increment;

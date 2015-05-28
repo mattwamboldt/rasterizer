@@ -8,36 +8,13 @@
 
 namespace Audio
 {
-	enum WaveFormat
-	{
-		WAVE_PCM = 1,
-		WAVE_FLOAT = 3,
-		WAVE_ALAW = 6,
-		WAVE_MULAW = 7,
-		EXTENSIBLE = 0xFFFE
-	};
-
 	WaveFile::WaveFile()
 		:playHead(0.0), volume(0.5), data(0), paused(true), looping(false), pitch(1.0f), panFile(0)
 	{}
 
-	WaveFile::~WaveFile()
+	bool WaveFile::Read(const char* path)
 	{
-		if(data)
-		{
-			delete [] data;
-			data = 0;
-		}
-	}
-
-	bool WaveFile::Load(const char* path)
-	{
-		if(data)
-		{
-			delete [] data;
-			data = 0;
-		}
-
+		data.clear();
 		playHead = 0.0;
 		paused = true;
 		looping = false;
@@ -47,127 +24,89 @@ namespace Audio
 		SetPan(0.0f);
 
 		SDL_RWops* file = SDL_RWFromFile( path, "r+b" );
-		//File does not exist
+		
 		if( file == NULL )
 		{
 			Debug::console( "Warning: Unable to open file! SDL Error: %s\n", SDL_GetError() );
 	        return false;
 		}
+		
+		if (!header.Read(file))
+		{
+			Debug::console("WAV PARSER: Failed to read header.\n");
+			SDL_RWclose(file);
+			return false;
+		}
+
+		Uint8 bytesPerSample = header.bitsPerSample / 8;
+		if (bytesPerSample == 1)
+		{
+			//We scale 8 bit samples to work in 16
+			for (Uint32 i = 0; i < header.numSamples; ++i)
+			{
+				data.push_back((((Uint16)SDL_ReadU8(file)) - 128) << 8);
+			}
+
+			header.blockAlign *= 2;
+			header.nAvgBytesPerSecond *= 2;
+			bytesPerSample = 2;
+			header.bitsPerSample = 16;
+		}
+		else if (bytesPerSample == 2)
+		{
+			for (Uint32 i = 0; i < header.numSamples; ++i)
+			{
+				data.push_back(SDL_ReadLE16(file));
+			}
+		}
+		else if (bytesPerSample == 3)
+		{
+			Sint32 fullSample;
+			for (Uint32 i = 0; i < header.numSamples; ++i)
+			{
+				fullSample = 0;
+				fullSample |= SDL_ReadU8(file) << 8;
+				fullSample |= SDL_ReadU8(file) << 16;
+				fullSample |= SDL_ReadU8(file) << 24;
+				data.push_back((fullSample / 2147483648.0f) * 32767.0f);
+			}
+
+			header.blockAlign = 2 * header.numChannels;
+			header.nAvgBytesPerSecond = header.numSamplesPerSecond * header.blockAlign;
+			bytesPerSample = 2;
+			header.bitsPerSample = 16;
+		}
 		else
 		{
-			//WAV files are a little endian format so we can't do any fancy memory mapping stuff.
-			//TODO: Write a tool that converts source audio files to a proprietary base raw format for faster reads
-			char chunkID[4];
+			Debug::console("WAV PARSER: sample size not 8, 16 or 24 bit, we can't deal yet.\n");
+			SDL_RWclose(file);
+			return false;
+		}
 
-			SDL_RWread( file, chunkID, 4, 1);
-			if(strncmp(chunkID, "RIFF", 4))
+		SDL_RWclose( file );
+		return true;
+	}
+
+	void WaveFile::Init(const WaveHeader& h)
+	{
+		header = h;
+	}
+
+	void WaveFile::Append(PCM16* source, int count)
+	{
+		for (int i = 0; i < count; i++)
+		{
+			data.push_back(source[i]);
+			if (header.numChannels == 2)
 			{
-				Debug::console("WAV PARSER: invalid header format\n");
-				return false;
+				data.push_back(source[i]);
 			}
-
-			//We ignore the size here
-			Uint32 chunkSize = SDL_ReadLE32( file );
-
-			SDL_RWread( file, chunkID, 4, 1);
-			if(strncmp(chunkID, "WAVE", 4))
-			{
-				Debug::console("WAV PARSER: invalid header format\n");
-				return false;
-			}
-
-			SDL_RWread( file, chunkID, 4, 1);
-			if(strncmp(chunkID, "fmt ", 4))
-			{
-				Debug::console("WAV PARSER: invalid header format\n");
-				return false;
-			}
-
-			//Should be 16, 18 or 40 depending on the file contents
-			//but we only care about the first 16 bytes for pcm support
-			chunkSize = SDL_ReadLE32( file );
-
-			format = SDL_ReadLE16(file);
-			numChannels = SDL_ReadLE16(file);
-
-			numSamplesPerSecond = SDL_ReadLE32(file);
-			nAvgBytesPerSecond = SDL_ReadLE32(file);
-
-			blockAlign = SDL_ReadLE16(file);
-			bitsPerSample = SDL_ReadLE16(file);
-
-			if(format != WAVE_PCM)
-			{
-				Debug::console("WAV PARSER: file not PCM\n");
-				return false;
-			}
-
-			SDL_RWseek(file, chunkSize - 16, RW_SEEK_CUR);
-
-			SDL_RWread( file, chunkID, 4, 1);
-			if(strncmp(chunkID, "data ", 4))
-			{
-				Debug::console("WAV PARSER: Excess chunks that we can't deal with yet\n");
-				return false;
-			}
-
-			chunkSize = SDL_ReadLE32( file );
-
-			Uint8 bytesPerSample = bitsPerSample / 8;
-			numSamples = chunkSize / bytesPerSample;
-			data = new PCM16[numSamples];
-
-			if(bytesPerSample == 1)
-			{
-				//We scale 8 bit samples to work in 16
-				for(Uint32 i = 0; i < numSamples; ++i)
-				{
-					data[i] = (((Uint16)SDL_ReadU8(file)) - 128) << 8;
-				}
-
-				blockAlign *= 2;
-				nAvgBytesPerSecond *= 2;
-				bytesPerSample = 2;
-				bitsPerSample = 16;
-			}
-			else if(bytesPerSample == 2)
-			{
-				for(Uint32 i = 0; i < numSamples; ++i)
-				{
-					data[i] = SDL_ReadLE16(file);
-				}
-			}
-			else if(bytesPerSample == 3)
-			{
-				Sint32 fullSample;
-				for(Uint32 i = 0; i < numSamples; ++i)
-				{
-					fullSample = 0;
-					fullSample |= SDL_ReadU8(file) << 8;
-					fullSample |= SDL_ReadU8(file) << 16;
-					fullSample |= SDL_ReadU8(file) << 24;
-					data[i] = (fullSample / 2147483648.0f) * 32767.0f;
-				}
-				
-				blockAlign = 2 * numChannels;
-				nAvgBytesPerSecond = numSamplesPerSecond * blockAlign;
-				bytesPerSample = 2;
-				bitsPerSample = 16;
-			}
-			else
-			{
-				Debug::console("WAV PARSER: sample size not 8 or 16 bit, we can't deal yet.\n");
-				return false;
-			}
-
-			SDL_RWclose( file );
-			return true;
 		}
 	}
 
 	bool WaveFile::Write(const char* path)
 	{
-		if(!data) return false;
+		if(data.size() == 0) return false;
 		
 		SDL_RWops* file = SDL_RWFromFile( path, "w+b" );
 		if( file == NULL )
@@ -176,31 +115,10 @@ namespace Audio
 	        return false;
 		}
 
-		Uint32 headerSize = 16;
-		Uint32 dataSize = numSamples * sizeof(PCM16);
+		header.numSamples = data.size();
+		header.Write(file);
 
-		SDL_RWwrite( file, "RIFF", 4, 1);
-
-		//We ignore the size here
-		SDL_WriteLE32( file, headerSize + numSamples + 20);
-
-		SDL_RWwrite( file, "WAVE", 4, 1);
-		SDL_RWwrite( file, "fmt ", 4, 1);
-
-		//We only care about the first 16 bytes for pcm support
-		SDL_WriteLE32(file, headerSize);
-
-		SDL_WriteLE16(file, format);
-		SDL_WriteLE16(file, numChannels);
-		SDL_WriteLE32(file, numSamplesPerSecond);
-		SDL_WriteLE32(file, nAvgBytesPerSecond);
-		SDL_WriteLE16(file, blockAlign);
-		SDL_WriteLE16(file, bitsPerSample);
-		
-		SDL_RWwrite( file, "data", 4, 1);
-		SDL_WriteLE32( file, dataSize );
-
-		for(Uint32 i = 0; i < numSamples; ++i)
+		for (Uint32 i = 0; i < header.numSamples; ++i)
 		{
 			SDL_WriteLE16(file, data[i]);
 		}
@@ -215,12 +133,12 @@ namespace Audio
 		Breakpoint newPoint;
 		
 		float timePerFrame = sampleRateMS / 1000.0f;
-		Uint32 samplesPerFrame = timePerFrame * numSamplesPerSecond;
+		Uint32 samplesPerFrame = timePerFrame * header.numSamplesPerSecond;
 
 		Uint32 sampleOffset = 0;
 		float time = 0.0f;
 
-		while(sampleOffset < numSamples)
+		while (sampleOffset < header.numSamples)
 		{
 			newPoint.time = time;
 			newPoint.value = Peak(samplesPerFrame, sampleOffset) / 32768.0f;
@@ -298,38 +216,38 @@ namespace Audio
 
 	void WaveFile::Write(PCM16* buffer, int count)
 	{
-		if(data && !paused)
+		if(data.size() && !paused)
 		{
 			int i = 0;
 
 			//This is how many samples to increment before playing the next sample
-			double playheadIncrement =  (numSamplesPerSecond / (double)audioSpec.freq) * pitch;
+			double playheadIncrement = (header.numSamplesPerSecond / (double)audioSpec.freq) * pitch;
 
-			while(playHead < (numSamples / numChannels) && i < count)
+			while (playHead < (header.numSamples / header.numChannels) && i < count)
 			{
 				//The playhead will be in relation to a mono track and scaled
-				Uint32 playHeadsample = ((Uint32)playHead) * numChannels;
+				Uint32 playHeadsample = ((Uint32)playHead) * header.numChannels;
 				double t = 0.0;
 				Uint32 nextSample = playHeadsample;
 				
 				//We do a lerp to scale the audio
-				if(playHeadsample < (numSamples / numChannels) - 1)
+				if (playHeadsample < (header.numSamples / header.numChannels) - 1)
 				{
-					t = playHead - (playHeadsample / (float)numChannels);
-					nextSample = playHeadsample + numChannels;
+					t = playHead - (playHeadsample / (float)header.numChannels);
+					nextSample = playHeadsample + header.numChannels;
 				}
 
 				float leftChannel = lerp(data[playHeadsample], data[nextSample], t);
 				float rightChannel = leftChannel; //For mono we simply output the same sample to both channels
 
-				if(numChannels == 2)
+				if (header.numChannels == 2)
 				{
 					rightChannel = lerp(data[playHeadsample+1], data[nextSample+1], t);
 				}
 
 				if(panFile)
 				{
-					SetPan(panFile->Value(playHead / numSamplesPerSecond));
+					SetPan(panFile->Value(playHead / header.numSamplesPerSecond));
 				}
 
 				buffer[i] = (PCM16)(leftChannel * volume * leftGain);
@@ -338,7 +256,7 @@ namespace Audio
 				i += 2;
 				playHead += playheadIncrement;
 
-				if(playHead >= (numSamples / numChannels) && looping)
+				if (playHead >= (header.numSamples / header.numChannels) && looping)
 				{
 					playHead = 0.0;
 				}
@@ -350,7 +268,7 @@ namespace Audio
 	{
 		PCM16 peak = 0;
 		PCM16 absval = 0;
-		for(Uint32 i = 0; i < count && i + offset < numSamples; ++i)
+		for (Uint32 i = 0; i < count && i + offset < header.numSamples; ++i)
 		{
 			absval = abs(data[i + offset]);
 			if(absval > peak)
@@ -370,13 +288,13 @@ namespace Audio
 		//converts from db to amplitude
 		float maxAmplitude = pow(10.0, decibels/20.0);
 
-		PCM16 peak = Peak(numSamples);
+		PCM16 peak = Peak(header.numSamples);
 
 		//We don't process silent files
 		if(peak == 0) return;
 
 		float scale = maxAmplitude / (peak / 32768.0f);
-		for(Uint32 i = 0; i < numSamples; ++i)
+		for (Uint32 i = 0; i < header.numSamples; ++i)
 		{
 			data[i] *= scale;
 		}

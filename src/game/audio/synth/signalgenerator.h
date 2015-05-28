@@ -3,6 +3,7 @@
 
 #include "../types.h"
 #include "../file/breakpoint.h"
+#include "../file/wave.h"
 
 namespace Audio
 {
@@ -14,7 +15,7 @@ namespace Audio
 			samplingRate(44100), duration(5.0f), tremoloFrequency(0.0)
 		{}
 
-		void WriteTone(char* path, WaveType type = SINE_WAVE);
+		void WriteTone(WaveFile& file, WaveType type = SINE_WAVE);
 
 		void SetDuration(float value){ duration = value; }
 		void SetTremolo(float frequency){ tremoloFrequency = frequency; }

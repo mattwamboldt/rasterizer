@@ -71,50 +71,45 @@ namespace Audio
 		}
 	}
 
-	void OscillatorBank::WriteTone(char* path)
+	void OscillatorBank::WriteTone(WaveFile& file)
 	{
-		SDL_RWops* testfile = SDL_RWFromFile(path, "w");
-		if(testfile)
+		Uint32 numSamples = samplingRate * duration;
+		PCM16* buffer = new PCM16[numSamples];
+		memset(buffer, 0, numSamples * 2);
+
+		for(int i = 0; i < numSamples; ++i)
 		{
-			Uint32 numSamples = samplingRate * duration;
-			PCM16* buffer = new PCM16[numSamples];
-			memset(buffer, 0, numSamples * 2);
-
-			for(int i = 0; i < numSamples; ++i)
-			{
-				double frequency = 440.0;
-				if(frequencyMod)
-				{
-					frequency = frequencyMod->NextSample();
-				}
-
-				double amplitude = 1.0;
-				if(amplitudeEnv)
-				{
-					amplitude = amplitudeEnv->NextSample();
-				}
-
-				double sample = 0.0;
-				for(int j = 0; j < numOscilltors; ++j)
-				{
-					sample += oscillators[j].NextSample(frequency * frequencies[j]) * amplitudes[j];
-				}
-
-				buffer[i] = sample * amplitude * 32767;
-			}
-
+			double frequency = 440.0;
 			if(frequencyMod)
 			{
-				frequencyMod->ResetStream();
+				frequency = frequencyMod->NextSample();
 			}
 
+			double amplitude = 1.0;
 			if(amplitudeEnv)
 			{
-				amplitudeEnv->ResetStream();
+				amplitude = amplitudeEnv->NextSample();
 			}
 
-			SDL_RWwrite(testfile, buffer, 2, numSamples);
-			SDL_RWclose(testfile);
+			double sample = 0.0;
+			for(int j = 0; j < numOscilltors; ++j)
+			{
+				sample += oscillators[j].NextSample(frequency * frequencies[j]) * amplitudes[j];
+			}
+
+			buffer[i] = sample * amplitude * 32767;
 		}
+
+		if(frequencyMod)
+		{
+			frequencyMod->ResetStream();
+		}
+
+		if(amplitudeEnv)
+		{
+			amplitudeEnv->ResetStream();
+		}
+
+		file.Append(buffer, numSamples);
 	}
 }

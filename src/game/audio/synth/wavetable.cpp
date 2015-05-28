@@ -39,6 +39,22 @@ namespace Audio
 		sampleIncrement = TABLELENGTH / sr;
 	}
 
+	void WaveTable::SetVolume(double value)
+	{
+		if (value < 0.0f)
+		{
+			volume = 0.0f;
+		}
+		else if (value > 1.0f)
+		{
+			value = 1.0f;
+		}
+		else
+		{
+			volume = value;
+		}
+	}
+
 	double WaveTable::NextSample()
 	{
 		//Linear interpolating wavetable
@@ -54,7 +70,7 @@ namespace Audio
 		while(phase >= TABLELENGTH) phase -= TABLELENGTH;
 		while(phase < 0.0) phase += TABLELENGTH;
 
-		return value;
+		return value * volume;
 	}
 
 	double WaveTable::NextSample(double freq)

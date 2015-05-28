@@ -4,6 +4,7 @@
 #include "../types.h"
 #include "oscillator.h"
 #include "../file/breakpoint.h"
+#include "../file/wave.h"
 #include <vector>
 
 namespace Audio
@@ -17,7 +18,7 @@ namespace Audio
 		
 		void Init(Uint32 numsignals, WaveType type = SQUARE_WAVE);
 
-		void WriteTone(char* path);
+		void WriteTone(WaveFile& file);
 
 		void SetDuration(float value){ duration = value; }
 		void SetAmplitudeEnvelope(BreakpointFile* value) {amplitudeEnv = value;}

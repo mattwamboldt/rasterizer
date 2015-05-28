@@ -109,16 +109,20 @@ xcopy /d /f /y /s dll "$(OutDir)"
     <ClCompile Include="game\audio\file\breakpoint.cpp" />
     <ClCompile Include="game\audio\file\midi.cpp" />
     <ClCompile Include="game\audio\file\wave.cpp" />
+    <ClCompile Include="game\audio\file\waveheader.cpp" />
     <ClCompile Include="game\audio\synth\midichannel.cpp" />
     <ClCompile Include="game\audio\synth\midicontroller.cpp" />
     <ClCompile Include="game\audio\synth\midinote.cpp" />
     <ClCompile Include="game\audio\synth\oscillator.cpp" />
     <ClCompile Include="game\audio\synth\oscillatorbank.cpp" />
     <ClCompile Include="game\audio\synth\signalgenerator.cpp" />
+    <ClCompile Include="game\audio\synth\wavebank.cpp" />
     <ClCompile Include="game\audio\synth\wavetable.cpp" />
     <ClCompile Include="game\audio\util.cpp" />
+    <ClCompile Include="game\audio\wavefunctions.cpp" />
     <ClCompile Include="game\debug.cpp" />
     <ClCompile Include="game\main.cpp" />
+    <ClCompile Include="game\perftimer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="game\audio\audio.h" />
@@ -126,16 +130,20 @@ xcopy /d /f /y /s dll "$(OutDir)"
     <ClInclude Include="game\audio\file\breakpoint.h" />
     <ClInclude Include="game\audio\file\midi.h" />
     <ClInclude Include="game\audio\file\wave.h" />
+    <ClInclude Include="game\audio\file\waveheader.h" />
     <ClInclude Include="game\audio\synth\midichannel.h" />
     <ClInclude Include="game\audio\synth\midicontroller.h" />
     <ClInclude Include="game\audio\synth\midinote.h" />
     <ClInclude Include="game\audio\synth\oscillator.h" />
     <ClInclude Include="game\audio\synth\oscillatorbank.h" />
     <ClInclude Include="game\audio\synth\signalgenerator.h" />
+    <ClInclude Include="game\audio\synth\wavebank.h" />
     <ClInclude Include="game\audio\synth\wavetable.h" />
     <ClInclude Include="game\audio\types.h" />
     <ClInclude Include="game\audio\util.h" />
+    <ClInclude Include="game\audio\wavefunctions.h" />
     <ClInclude Include="game\debug.h" />
+    <ClInclude Include="game\perftimer.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
