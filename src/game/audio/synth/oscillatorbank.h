@@ -9,6 +9,9 @@
 
 namespace Audio
 {
+    // Creates a group of oscillators that are combined to simulate other wave types
+    // the base oscillators are quite harsh and start developing issues at extreme frequencies
+    // This attempts to smooth them out with sine waves to approximate them
 	class OscillatorBank
 	{
 	public:

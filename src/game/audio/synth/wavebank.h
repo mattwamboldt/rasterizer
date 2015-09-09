@@ -11,6 +11,9 @@ using namespace std;
 
 namespace Audio
 {
+    // A Wavebank allows you to add multiple predefined waves to a single generator
+    // This allows you to combine them and apply effects and envelopes to them as a unit
+    // creating complex sounds
 	class WaveBank
 	{
 	public:

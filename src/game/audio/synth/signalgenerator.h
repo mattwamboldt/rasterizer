@@ -7,6 +7,10 @@
 
 namespace Audio
 {
+    // The signal generator writes a preset tone from an oscillator to a wavefile
+    // It allows us to generate single, simple waves from breakpoint data
+    // In some respects this doesn't need to exist when we have the wavebank but
+    // it's here for learning purposes
 	class SignalGenerator
 	{
 	public:

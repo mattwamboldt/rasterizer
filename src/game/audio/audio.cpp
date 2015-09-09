@@ -49,6 +49,9 @@ namespace Audio
 		Oscillator::SetSamplingRate(audioSpec.freq);
 		WaveTable::SetSamplingRate(audioSpec.freq);
 
+        /*
+            This is axample of using the wavefile, wavebank and effects code
+
 		//We use this wave file for testing purposes
 		WaveHeader header;
 		header.bitsPerSample = 16;
@@ -70,6 +73,7 @@ namespace Audio
 
 			tester.Write("test.wav");
 		}
+        */
 
 		SDL_PauseAudio(0);
 		return true;

@@ -124,8 +124,13 @@ xcopy /d /f /y /s dll "$(OutDir)"
     <ClCompile Include="game\debug.cpp" />
     <ClCompile Include="game\main.cpp" />
     <ClCompile Include="game\perftimer.cpp" />
+    <ClCompile Include="game\rendering\tests.cpp" />
+    <ClCompile Include="game\rendering\vector3.cpp" />
+    <ClCompile Include="game\rendering\vector4.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="game\rendering\tests.h" />
+    <ClInclude Include="game\rendering\vector3.h" />
     <ClInclude Include="game\audio\audio.h" />
     <ClInclude Include="game\audio\effects\delay.h" />
     <ClInclude Include="game\audio\effects\iaudioeffect.h" />
@@ -147,6 +152,7 @@ xcopy /d /f /y /s dll "$(OutDir)"
     <ClInclude Include="game\audio\wavefunctions.h" />
     <ClInclude Include="game\debug.h" />
     <ClInclude Include="game\perftimer.h" />
+    <ClInclude Include="game\rendering\vector4.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

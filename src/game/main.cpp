@@ -4,6 +4,8 @@
 #include "audio/audio.h"
 #include "perftimer.h"
 
+#include "rendering\tests.h"
+
 const int SCREEN_WIDTH = 640;
 const int SCREEN_HEIGHT = 480;
 
@@ -80,8 +82,8 @@ int main( int argc, char* args[] )
 					}
 					
 					//Apply the image
-					//SDL_BlitScaled( gHelloWorld, &imgRect, gScreenSurface, &screenRect );
-					//Update the surface
+                    SDL_FillRect(gScreenSurface, NULL, 0x000000);
+                    Draw(gScreenSurface);
 					SDL_UpdateWindowSurface( gWindow );
 				}
 			}

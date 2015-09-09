@@ -5,6 +5,10 @@
 
 namespace Audio
 {
+    // A Wavetable stores a set of amplitude values for a preexisting wave
+    // By advancing the index of the wave according to frequency and interpolating
+    // when not enough data exists we can simulate a pure oscillator without
+    // complex calculations per sample
 	class WaveTable
 	{
 	public:
