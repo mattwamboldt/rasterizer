@@ -1,0 +1,8 @@
+*.user
+*.ncb
+*.suo
+*.sdf
+*.opensdf
+test/
+obj/
+bin/
