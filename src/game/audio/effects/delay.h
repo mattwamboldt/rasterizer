@@ -2,15 +2,16 @@
 #define AUDIO_EFFECTS_DELAY
 
 #include "../audio.h"
+#include "iaudioeffect.h"
 
 namespace Audio
 {
-	class Delay
+	class Delay : public IAudioEffect
 	{
 	public:
 		Delay(float time, float decay);
 		~Delay();
-		void Write(PCM16* data, int count);
+		virtual void Write(PCM16* data, int count);
 
 	private:
 		PCM16* buffer;

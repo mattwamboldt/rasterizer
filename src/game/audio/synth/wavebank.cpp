@@ -99,6 +99,11 @@ namespace Audio
 
 			buffer[i] = sample * amplitude * 32767;
 		}
+
+		if (tremolo.GetFrequency() > 0.0)
+		{
+			tremolo.Write(buffer, count);
+		}
 	}
 
 	void WaveBank::Write(const char* path)

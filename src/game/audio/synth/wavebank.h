@@ -4,6 +4,7 @@
 #include "..\types.h"
 #include "..\file\breakpoint.h"
 #include "..\file\wave.h"
+#include "..\effects\tremolo.h"
 #include "wavetable.h"
 #include <vector>
 using namespace std;
@@ -16,7 +17,7 @@ namespace Audio
 		WaveBank()
 			: frequencyMod(0), amplitudeEnv(0),
 			samplingRate(44100), duration(5.0f),
-			tremoloFrequency(0.0), vibratoFrequency(0.0)
+			tremolo(0.3, 0.0), vibratoFrequency(0.0)
 		{}
 
 		void AddWave(WaveType waveType, double harmonicity = 1.0, double frequency = 440.0, double volume = 1.0);
@@ -25,7 +26,7 @@ namespace Audio
 		void Write(PCM16* buffer, int count);
 
 		void SetDuration(float value){ duration = value; }
-		void SetTremolo(float frequency){ tremoloFrequency = frequency; }
+		void SetTremolo(float frequency){ tremolo.SetFrequency(frequency); }
 		void SetVibrato(float frequency){ vibratoFrequency = frequency; }
 		void SetAmplitudeEnvelope(BreakpointFile* value) { amplitudeEnv = value; }
 		void SetFrequencyModulation(BreakpointFile* value) { frequencyMod = value; }
@@ -34,7 +35,7 @@ namespace Audio
 
 	private:
 		float duration;
-		double tremoloFrequency;
+		Tremolo tremolo;
 		double vibratoFrequency;
 
 		vector<WaveTable> waves;

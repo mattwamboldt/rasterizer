@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include "debug.h"
 #include "audio/audio.h"
+#include "perftimer.h"
 
 const int SCREEN_WIDTH = 640;
 const int SCREEN_HEIGHT = 480;
@@ -123,6 +124,8 @@ bool init()
             gScreenSurface = SDL_GetWindowSurface( gWindow );
         }
     }
+
+	PerfTimer::Init();
 
     return success;
 }

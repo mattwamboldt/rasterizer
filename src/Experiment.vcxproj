@@ -106,6 +106,7 @@ xcopy /d /f /y /s dll "$(OutDir)"
   <ItemGroup>
     <ClCompile Include="game\audio\audio.cpp" />
     <ClCompile Include="game\audio\effects\delay.cpp" />
+    <ClCompile Include="game\audio\effects\tremolo.cpp" />
     <ClCompile Include="game\audio\file\breakpoint.cpp" />
     <ClCompile Include="game\audio\file\midi.cpp" />
     <ClCompile Include="game\audio\file\wave.cpp" />
@@ -127,6 +128,8 @@ xcopy /d /f /y /s dll "$(OutDir)"
   <ItemGroup>
     <ClInclude Include="game\audio\audio.h" />
     <ClInclude Include="game\audio\effects\delay.h" />
+    <ClInclude Include="game\audio\effects\iaudioeffect.h" />
+    <ClInclude Include="game\audio\effects\tremolo.h" />
     <ClInclude Include="game\audio\file\breakpoint.h" />
     <ClInclude Include="game\audio\file\midi.h" />
     <ClInclude Include="game\audio\file\wave.h" />

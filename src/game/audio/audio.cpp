@@ -20,41 +20,17 @@
 namespace Audio
 {
 	SDL_AudioSpec audioSpec;
-	Oscillator test;
-	WaveFile wave;
-	Delay* delay;
-	MidiFile midi;
 	MidiController midiController;
-	SDL_RWops* outbuffer;
-	BreakpointFile breapoints;
-	BreakpointFile pantest;
-
-	WaveHeader outputTestHeader;
-	WaveFile outputTest;
 
 	void FillAudio(void *userData, Uint8 *audioData, int length)
 	{
 		// Clear our audio buffer to silence.
 		memset(audioData, audioSpec.silence, length);
-		PCM16* pcmData = (PCM16*)audioData;
-		int samplecount = length / 2;
-		//midi.Advance(&midiController);
-		wave.Write(pcmData, samplecount);
-		if(outbuffer) SDL_RWwrite(outbuffer, audioData, 1, length);
+        midiController.Write((PCM16*)audioData, length / 2);
 	}
 
 	bool Init()
 	{
-		outputTestHeader.bitsPerSample = 16;
-		outputTestHeader.blockAlign = 2;
-		outputTestHeader.format = WAVE_PCM;
-		outputTestHeader.numChannels = 1;
-		outputTestHeader.numSamplesPerSecond = 44100;
-		outputTestHeader.nAvgBytesPerSecond = outputTestHeader.numSamplesPerSecond * 2;
-		outputTest.Init(outputTestHeader);
-
-		PerfTimer::Init();
-		PerfTimer audio_init("Audio::Init");
 		//Set our initial properties
 		audioSpec.freq = 44100;
 		audioSpec.format = AUDIO_S16;
@@ -65,7 +41,7 @@ namespace Audio
 		SDL_OpenAudio(&audioSpec, 0);
 
 		//If the audio device gives the expected format then unpause the device
-		if(audioSpec.format != AUDIO_S16)
+		if (audioSpec.format != AUDIO_S16)
 		{
 			return false;
 		}
@@ -73,20 +49,27 @@ namespace Audio
 		Oscillator::SetSamplingRate(audioSpec.freq);
 		WaveTable::SetSamplingRate(audioSpec.freq);
 
-		BreakpointFile arpeggio;
-		arpeggio.Load("data/frequency.txt");
-		arpeggio.SetSamplingRate(audioSpec.freq);
-		arpeggio.ResetStream();
+		//We use this wave file for testing purposes
+		WaveHeader header;
+		header.bitsPerSample = 16;
+		header.blockAlign = 2;
+		header.format = 1;
+		header.nAvgBytesPerSecond = audioSpec.format * 2;
+		header.numChannels = 1;
+		header.numSamplesPerSecond = audioSpec.format;
+		WaveFile tester;
+		tester.Init(header);
 
-		clock_t endTime, startTime = clock();
-		WaveBank test;
-		test.AddWave(TRIANGLE_WAVE);
-		test.SetDuration(5.0f);
-		test.SetFrequencyModulation(&arpeggio);
-		test.Write(outputTest);
-		endTime = clock();
-		Debug::console("TIME: triangle synthesis time %f seconds\n", (endTime - startTime) / (double)CLOCKS_PER_SEC);
-		outputTest.Write("test.wav");
+		{
+			PerfTimer test("wabank generation");
+			WaveBank waveBank;
+			waveBank.AddWave(TRIANGLE_WAVE);
+			waveBank.SetTremolo(10.0f);
+			waveBank.SetDuration(5.0);
+			waveBank.Write(tester);
+
+			tester.Write("test.wav");
+		}
 
 		SDL_PauseAudio(0);
 		return true;
