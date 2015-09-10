@@ -1,6 +1,7 @@
 #include "tests.h"
 #include <math.h>
 #include <algorithm>
+#include <time.h>
 
 // This is used to run random softawre rasterizing tests
 
@@ -69,10 +70,14 @@ void DrawLineNaive(SDL_Surface* screen, const Point& p1, const Point& p2, const 
     }
 }
 
-// 
+// The Bresenham algorithm is similar to the naive one however it takes into account
+// What the change in y is supposed to be and ticks over the y of the line once the
+// error accumulates above a certain amount. Since it only works in one octant we
+// have to do a bunch of precalculations to set it in the right direction, but it's pretty fast
+// and could be done purely with integer math using a low precision of error like 50%
 void DrawLineBresenham(SDL_Surface* screen, const Point& p1, const Point& p2, const Color& c)
 {
-    bool yMajor = p2.y - p1.y > p2.x - p1.x;
+    bool yMajor = abs(p2.y - p1.y) > abs(p2.x - p1.x);
     Point startPoint = p1;
     Point endPoint = p2;
      
@@ -91,10 +96,11 @@ void DrawLineBresenham(SDL_Surface* screen, const Point& p1, const Point& p2, co
 
     float dx = endPoint.x - startPoint.x;
     float dy = endPoint.y - startPoint.y;
+	dy = fabs(dy);
 
     float error = dx / 2.0f;
     int ystep = 1;
-    if (startPoint.y < endPoint.y)
+    if (startPoint.y > endPoint.y)
     {
         ystep = -1;
     }
@@ -136,11 +142,24 @@ void DrawLineBresenham(SDL_Surface* screen, const Point& p1, const Point& p2, co
     }
 }
 
+void DrawClock(SDL_Surface* screen, const Point& origin, Color c)
+{
+	time_t currtime = time(NULL);
+	float currsecond = (currtime % 60) / 60.0f;
+
+	Point edge;
+	edge.x = origin.x + 100 * cos(currsecond * 2 * M_PI);
+	edge.y = origin.y + 100 * sin(currsecond * 2 * M_PI);
+	DrawLineBresenham(screen, origin, edge, Color(0xFFFFFF));
+}
+
 void Draw(SDL_Surface* screen)
 {
+	DrawClock(screen, Point(screen->w / 2, screen->h / 2), Color(0x5555FF));
+
     DrawLineBresenham(screen, Point(50, 50), Point(75, 75), Color(0xFFFFFF));
     DrawLineBresenham(screen, Point(50, 50), Point(75, 50), Color(0xFFFFFF));
-    DrawLineBresenham(screen, Point(50, 50), Point(75, 25), Color(0xFFFFFF));
+    DrawLineBresenham(screen, Point(0, 50), Point(75, 25), Color(0xFFFFFF));
     DrawLineBresenham(screen, Point(50, 50), Point(50, 75), Color(0xFFFFFF));
     DrawLineBresenham(screen, Point(50, 50), Point(50, 25), Color(0xFFFFFF));
     DrawLineBresenham(screen, Point(50, 50), Point(25, 75), Color(0xFFFFFF));
