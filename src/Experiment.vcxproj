@@ -103,11 +103,16 @@
     <ClCompile Include="game\debug.cpp" />
     <ClCompile Include="game\main.cpp" />
     <ClCompile Include="game\perftimer.cpp" />
+    <ClCompile Include="game\rendering\matrix.cpp" />
     <ClCompile Include="game\rendering\tests.cpp" />
     <ClCompile Include="game\rendering\vector3.cpp" />
     <ClCompile Include="game\rendering\vector4.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="game\rendering\camera.h" />
+    <ClInclude Include="game\rendering\color.h" />
+    <ClInclude Include="game\rendering\device.h" />
+    <ClInclude Include="game\rendering\matrix.h" />
     <ClInclude Include="game\rendering\tests.h" />
     <ClInclude Include="game\rendering\vector3.h" />
     <ClInclude Include="game\debug.h" />
