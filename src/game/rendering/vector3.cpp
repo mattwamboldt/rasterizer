@@ -20,7 +20,7 @@ void Vector3::Normalize()
     z /= length;
 }
 
-Vector3 Vector3::Cross(const Vector3& v2)
+Vector3 Vector3::Cross(const Vector3& v2) const
 {
     Vector3 resultant;
     resultant.x = y * v2.z - v2.y * z;

@@ -9,10 +9,10 @@ class Matrix
 public:
     Matrix();
     Matrix(
-        float x1y1, float x2y1, float x3y1, float x4y1,
-        float x1y2, float x2y2, float x3y2, float x4y2,
-        float x1y3, float x2y3, float x3y3, float x4y3,
-        float x1y4, float x2y4, float x3y4, float x4y4
+        float i1j1, float i1j2, float i1j3, float i1j4,
+        float i2j1, float i2j2, float i2j3, float i2j4,
+        float i3j1, float i3j2, float i3j3, float i3j4,
+        float i4j1, float i4j2, float i4j3, float i4j4
     );
 
     // Fills the translation vector of the matrix
@@ -34,11 +34,15 @@ public:
     void BuildTranslation(const float x, const float y, const float z);
 
     // Creates a rotation matrix along the given axis
+    // The direction of the apparent rotation follows the right hand rule
     void BuildRotationX(const float radians);
     void BuildRotationY(const float radians);
     void BuildRotationZ(const float radians);
 
     // Creates a rotation matrix from yaw pitch and roll components, instead of merging rotations along an axis after the fact
+    // This partially defines what is considered forward in our system
+    // We consider z to be the forward back dimension which means
+    // yaw = rotate y, pitch = rotate x, roll = rotate z
     void BuildYawPitchRoll(const float yawRadians, const float pitchRadians, const float rollRadians);
     
     // We'll get to this later
@@ -46,7 +50,21 @@ public:
     // void BuildRotationQuaternio(const Quaternion& q);
 
     // Uses a location and target to construct a transformation matrix to bring everything into a camera space
+    // The look at matrix finds the direction the camera is looking and calculates a new coordinate system
+    // from that initial angle and the up vector. It then adds concatenates a translation to -eye with a rotation
+    // into the cameras coordinate system
     void BuildLookAt(const Vector3& eye, const Vector3& at, const Vector3& up);
+
+    // These two functions generate our projection matrix which transforms vetrices from camera space into projection space
+    void BuildOrthographicProjection(float width, float height, float nearClip, float farClip);
+    void BuildPerspectiveProjection(float fovx, float fovy, float nearClip, float farClip);
+
+    // Used for debugging
+    void console() const;
+    void Set(int i, int j, float value)
+    {
+        values[i][j] = value;
+    }
 
     // This matrix is basically 1 in matrix world
     static const Matrix Identity;
