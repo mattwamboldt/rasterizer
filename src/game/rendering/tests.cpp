@@ -5,6 +5,8 @@
 #include <vector>
 #include "color.h"
 #include "vector3.h"
+#include "matrix.h"
+#include "../debug.h"
 
 typedef std::vector<Vector3> Mesh;
 
@@ -287,12 +289,6 @@ void FillTriangle(SDL_Surface* screen, Vertex v1, Vertex v2, Vertex v3)
 
 void Draw(SDL_Surface* screen)
 {
-	DrawClock(screen, Point(screen->w / 2, screen->h / 2), Color(0x5555FF));
-
-    DrawTriangle(screen, Point(50, 50), Point(75, 75), Point(100, 25), Color(0xFF5555));
-    DrawTrapezoid(screen, Point(screen->w / 2, screen->h / 4), 150, 50, 100, Color(0xFF55FF));
-    FillTriangle(screen, Vertex(50, 550), Vertex(75, 575), Vertex(100, 525));
-
     // 3d rendering tests
     Mesh box;
     box.push_back(Vector3(-1.0f, 1.0f, 1.0f));
@@ -304,6 +300,41 @@ void Draw(SDL_Surface* screen)
     box.push_back(Vector3(1.0f, -1.0f, 1.0f));
     box.push_back(Vector3(1.0f, -1.0f, -1.0f));
 
-    Vector3 position = Vector3(0.0f, 0.0f, 0.0f);
-    Vector3 rotation = Vector3(0.0f, 0.0f, 0.0f);
+    for (int i = 0; i < box.size(); ++i)
+    {
+        //DrawPoint(screen, Point(screen->w / 2 + box[i].x, screen->h / 2 + box[i].y), Color(0xFFFFFF));
+    }
+
+    Vector3 position = Vector3(2.0f, 0.0f, 3.0f);
+    Vector3 target = Vector3(0.0f, 0.0f, 0.0f);
+
+    time_t currtime = time(NULL);
+    float currsecond = (currtime % 60) / 60.0f;
+
+    Matrix worldMatrix;
+    worldMatrix.BuildRotationY(2 * M_PI * currsecond);
+
+    Matrix viewMatrix;
+    viewMatrix.BuildLookAt(position, target, Vector3(0, 1, 0));
+
+    Matrix projectionMatrix;
+    projectionMatrix.BuildOrthographicProjection(4, 3, 0, 20);
+
+    // At this point our stuff will be in projection space which isn't quite screen space but we need to do a few things before that
+    // Normally we'd do a transform from object to world but we're treating the test box as being at origin for now
+    // Also in a right handed system so multiplies go right to left
+    Matrix transformMatrix = projectionMatrix * viewMatrix * worldMatrix;
+    for (int i = 0; i < box.size(); ++i)
+    {
+        Vector3 point = transformMatrix.Transform(box[i]);
+        Point screenPoint = Point(
+            ((screen->w / 2) * point.x) + (screen->w / 2),
+            -(((screen->h / 2) * point.y) - (screen->h / 2))
+            );
+
+        if (screenPoint.x >= 0 && screenPoint.x < screen->w && screenPoint.y >= 0 && screenPoint.y < screen->h)
+        {
+            DrawPoint(screen, screenPoint, Color(0xFFFFFF));
+        }
+    }
 }
