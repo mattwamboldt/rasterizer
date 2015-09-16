@@ -4,6 +4,8 @@
 #include "perftimer.h"
 
 #include "rendering\tests.h"
+#include "rendering\mesh.h"
+#include "rendering\device.h"
 
 const int SCREEN_WIDTH = 1024;
 const int SCREEN_HEIGHT = 768;
@@ -15,7 +17,8 @@ SDL_Window* gWindow = NULL;
 SDL_Surface* gScreenSurface = NULL;
 
 //The image we will load and show on the screen
-SDL_Surface* gHelloWorld = NULL;
+Mesh gMesh;
+Device* gDevice;
 
 //Starts up SDL and creates window
 bool init();
@@ -50,8 +53,8 @@ int main( int argc, char* args[] )
             }
             
             //Apply the image
-            SDL_FillRect(gScreenSurface, NULL, 0x000000);
-            Draw(gScreenSurface);
+            gDevice->Clear(Color(0x000000));
+            Draw(gDevice, gMesh);
             SDL_UpdateWindowSurface( gWindow );
         }
     }
@@ -86,10 +89,17 @@ bool init()
         {
             //Get window surface
             gScreenSurface = SDL_GetWindowSurface( gWindow );
+            gDevice = new Device(gScreenSurface);
         }
     }
 
     PerfTimer::Init();
+
+    if (!gMesh.ReadTestFormat("data/suzanne.obj"))
+    {
+        Debug::console("Unable to load obj file %s! SDL Error: %s\n", "data/suzanne.obj", SDL_GetError());
+        success = false;
+    }
 
     return success;
 }
@@ -97,6 +107,11 @@ bool init()
 void close()
 {
 	SDL_CloseAudio();
+
+    if (gDevice)
+    {
+        delete gDevice;
+    }
 
     //Destroy window
     SDL_DestroyWindow( gWindow );

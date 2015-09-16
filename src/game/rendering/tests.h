@@ -2,7 +2,9 @@
 #define RENDERING_TESTS_H
 
 #include <SDL/SDL.h>
+#include "mesh.h"
+#include "device.h"
 
-void Draw(SDL_Surface* screen);
+void Draw(Device* screen, Mesh& mesh);
 
 #endif
