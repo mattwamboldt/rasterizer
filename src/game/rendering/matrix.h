@@ -23,8 +23,8 @@ public:
     Vector3 GetPosition();
 
     // Applys the current matrix to the given vector to produce a new one
-    Vector3 Transform(const Vector3& v);
-    Vector4 Transform(const Vector4& v);
+    Vector3 Transform(const Vector3& v) const;
+    Vector4 Transform(const Vector4& v) const;
 
     // Attempts to calculate the inverse of the matrix, not all have one
     Matrix Inverse();
@@ -56,7 +56,7 @@ public:
     void BuildLookAt(const Vector3& eye, const Vector3& at, const Vector3& up);
 
     // These two functions generate our projection matrix which transforms vetrices from camera space into projection space
-    void BuildOrthographicProjection(float width, float height, float nearClip, float farClip);
+    void BuildOrthographicProjection(float bottom, float top, float left, float right, float near, float far);
     void BuildPerspectiveProjection(float fovx, float fovy, float nearClip, float farClip);
 
     // Used for debugging
