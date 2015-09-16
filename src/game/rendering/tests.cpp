@@ -7,8 +7,9 @@
 #include "vector3.h"
 #include "matrix.h"
 #include "../debug.h"
-
-typedef std::vector<Vector3> Mesh;
+#include "mesh.h"
+#include "camera.h"
+#include "device.h"
 
 // This is used to run random softawre rasterizing tests
 
@@ -40,11 +41,18 @@ struct Vertex
     Color color;
 };
 
-// Useful in very rare occasions but shows the basic idea
+void DrawPoint(SDL_Surface* screen, int x, int y, const Color& c)
+{
+    if (x >= 0 && x < screen->w && y >= 0 && y < screen->h)
+    {
+        Uint32* pixels = (Uint32 *)screen->pixels;
+        pixels[x + y * screen->w] = SDL_MapRGB(screen->format, c.r, c.g, c.b);
+    }
+}
+
 void DrawPoint(SDL_Surface* screen, const Point& p, const Color& c)
 {
-    Uint32* pixels = (Uint32 *)screen->pixels;
-    pixels[p.x + p.y * screen->w] = SDL_MapRGB(screen->format, c.r, c.g, c.b);
+    DrawPoint(screen, p.x, p.y, c);
 }
 
 // The naive algorithm for drawing a line is to directly plot the line equation
@@ -59,8 +67,7 @@ void DrawLineNaive(SDL_Surface* screen, const Point& p1, const Point& p2, const 
     
     for (int x = p1.x; x <= p2.x; ++x)
     {
-        int y = p1.y + dx * (x - p1.x) / dy;
-        pixels[x + y * screen->w] = screenColor;
+        DrawPoint(screen, x, p1.y + dx * (x - p1.x) / dy, c);
     }
 }
 
@@ -102,15 +109,12 @@ void DrawLineBresenham(SDL_Surface* screen, const Point& p1, const Point& p2, co
     int y = startPoint.y;
     int maxX = endPoint.x;
 
-    Uint32* pixels = (Uint32 *)screen->pixels;
-    Uint32 screenColor = SDL_MapRGB(screen->format, c.r, c.g, c.b);
-
     // Figure out which axis to move along
     if (yMajor)
     {
         for (int x = startPoint.x; x <= endPoint.x; ++x)
         {
-            pixels[y + x * screen->w] = screenColor;
+            DrawPoint(screen, y, x, c);
 
             error -= dy;
             if (error < 0)
@@ -124,7 +128,7 @@ void DrawLineBresenham(SDL_Surface* screen, const Point& p1, const Point& p2, co
     {
         for (int x = startPoint.x; x <= endPoint.x; ++x)
         {
-            pixels[x + y * screen->w] = screenColor;
+            DrawPoint(screen, x, y, c);
 
             error -= dy;
             if (error < 0)
@@ -150,14 +154,14 @@ void DrawCircle(SDL_Surface* screen, const Point& origin, Uint32 radius, Color c
 
     while (x < y)
     {
-        pixels[(origin.x + x) + (origin.y + y) * screen->w] = screenColor;
-        pixels[(origin.x + x) + (origin.y - y) * screen->w] = screenColor;
-        pixels[(origin.x - x) + (origin.y + y) * screen->w] = screenColor;
-        pixels[(origin.x - x) + (origin.y - y) * screen->w] = screenColor;
-        pixels[(origin.x + y) + (origin.y + x) * screen->w] = screenColor;
-        pixels[(origin.x + y) + (origin.y - x) * screen->w] = screenColor;
-        pixels[(origin.x - y) + (origin.y + x) * screen->w] = screenColor;
-        pixels[(origin.x - y) + (origin.y - x) * screen->w] = screenColor;
+        DrawPoint(screen, origin.x + x, origin.y + y, c);
+        DrawPoint(screen, origin.x + x, origin.y - y, c);
+        DrawPoint(screen, origin.x - x, origin.y + y, c);
+        DrawPoint(screen, origin.x - x, origin.y - y, c);
+        DrawPoint(screen, origin.x + y, origin.y + x, c);
+        DrawPoint(screen, origin.x + y, origin.y - x, c);
+        DrawPoint(screen, origin.x - y, origin.y + x, c);
+        DrawPoint(screen, origin.x - y, origin.y - x, c);
 
         if (determinant < 0)
         {
@@ -205,7 +209,6 @@ void DrawTrapezoid(SDL_Surface* screen, const Point& origin, Uint32 width, Uint3
     DrawLineBresenham(screen, ll, ul, c);
 }
 
-
 void FillBottomFlatTriangle(SDL_Surface* screen, const Vertex& v1, const Vertex& v2, const Vertex& v3)
 {
     Uint32* pixels = (Uint32 *)screen->pixels;
@@ -213,6 +216,14 @@ void FillBottomFlatTriangle(SDL_Surface* screen, const Vertex& v1, const Vertex&
 
     float invslope1 = (v2.x - v1.x) / (v2.y - v1.y);
     float invslope2 = (v3.x - v1.x) / (v3.y - v1.y);
+
+    // Since we always assume left to right drawing we need the bigger slope to be x2
+    // This will still produce the correct triangle because the bounds of the line stay the same
+    if (invslope1 > invslope2)
+    {
+        std::swap(invslope1, invslope2);
+    }
+
     float x1 = v1.x;
     float x2 = v1.x;
     for (int y = v1.y; y <= v2.y; ++y)
@@ -234,8 +245,15 @@ void FillTopFlatTriangle(SDL_Surface* screen, const Vertex& v1, const Vertex& v2
 
     float invslope1 = (v3.x - v1.x) / (v3.y - v1.y);
     float invslope2 = (v3.x - v2.x) / (v3.y - v2.y);
+
+    if (invslope1 < invslope2)
+    {
+        std::swap(invslope1, invslope2);
+    }
+
     float x1 = v3.x;
     float x2 = v3.x;
+
     for (int y = v3.y; y > v1.y; --y)
     {
         for (int x = x1; x <= x2; ++x)
@@ -287,46 +305,132 @@ void FillTriangle(SDL_Surface* screen, Vertex v1, Vertex v2, Vertex v3)
     }
 }
 
-void Draw(SDL_Surface* screen)
+Vector3 Project(SDL_Surface* screen, Vector3 v, const Matrix& transform)
 {
+    Vector3 projectedVector = transform.Transform(v);
+    return Vector3(
+        ((screen->w / 2) * projectedVector.x) + (screen->w / 2),
+        -(((screen->h / 2) * projectedVector.y) - (screen->h / 2)),
+        projectedVector.z
+    );
+}
+
+void Draw(SDL_Surface* _screen)
+{
+    Device screen(_screen);
+
     // 3d rendering tests
     Mesh box;
-    box.push_back(Vector3(-1.0f, 1.0f, 1.0f));
-    box.push_back(Vector3(1.0f, 1.0f, 1.0f));
-    box.push_back(Vector3(-1.0f, -1.0f, 1.0f));
-    box.push_back(Vector3(-1.0f, -1.0f, -1.0f));
-    box.push_back(Vector3(-1.0f, 1.0f, -1.0f));
-    box.push_back(Vector3(1.0f, 1.0f, -1.0f));
-    box.push_back(Vector3(1.0f, -1.0f, 1.0f));
-    box.push_back(Vector3(1.0f, -1.0f, -1.0f));
+    box.vertices.push_back(Vector3(-1.0f, 1.0f, 1.0f));
+    box.vertices.push_back(Vector3(1.0f, 1.0f, 1.0f));
+    box.vertices.push_back(Vector3(-1.0f, -1.0f, 1.0f));
+    box.vertices.push_back(Vector3(1.0f, -1.0f, 1.0f));
+    box.vertices.push_back(Vector3(-1.0f, 1.0f, -1.0f));
+    box.vertices.push_back(Vector3(1.0f, 1.0f, -1.0f));
+    box.vertices.push_back(Vector3(1.0f, -1.0f, -1.0f));
+    box.vertices.push_back(Vector3(-1.0f, -1.0f, -1.0f));
 
-    for (int i = 0; i < box.size(); ++i)
-    {
-        //DrawPoint(screen, Point(screen->w / 2 + box[i].x, screen->h / 2 + box[i].y), Color(0xFFFFFF));
-    }
+    box.faces.push_back(Face(0, 1, 2));
+    box.faces.push_back(Face(1, 2, 3));
 
-    Vector3 position = Vector3(2.0f, 0.0f, 3.0f);
-    Vector3 target = Vector3(0.0f, 0.0f, 0.0f);
+    box.faces.push_back(Face(1, 3, 6));
+    box.faces.push_back(Face(1, 5, 6));
 
-    time_t currtime = time(NULL);
-    float currsecond = (currtime % 60) / 60.0f;
+    box.faces.push_back(Face(0, 1, 4));
+    box.faces.push_back(Face(1, 4, 5));
 
-    Matrix worldMatrix;
-    worldMatrix.BuildRotationY(2 * M_PI * currsecond);
+    box.faces.push_back(Face(2, 3, 7));
+    box.faces.push_back(Face(3, 6, 7));
+
+    box.faces.push_back(Face(0, 2, 7));
+    box.faces.push_back(Face(0, 4, 7));
+
+    box.faces.push_back(Face(4, 5, 6));
+    box.faces.push_back(Face(4, 6, 7));
+
+    Camera camera;
+    camera.position = Vector3(2.0f, 0.0f, 3.0f);
+    camera.target = Vector3(0.0f, 0.0f, 0.0f);
+
+    float rotationsPerSecond = 0.25f;
+    float currsecond = ((int)(SDL_GetTicks() * rotationsPerSecond) % 1000) / 1000.0f;
+    //box.rotation.x = 2 * M_PI * rotationsPerSecond * currsecond;
+    box.rotation.y = 2 * M_PI * rotationsPerSecond * currsecond;
+
+    Matrix objectRotation;
+    objectRotation.BuildYawPitchRoll(box.rotation.y, box.rotation.x, box.rotation.z);
+
+    Matrix objectTranslation;
+    objectTranslation.BuildTranslation(box.position);
+
+    Matrix worldMatrix = objectTranslation * objectRotation;
 
     Matrix viewMatrix;
-    viewMatrix.BuildLookAt(position, target, Vector3(0, 1, 0));
+    viewMatrix.BuildLookAt(camera.position, camera.target, Vector3(0, 1, 0));
 
     Matrix projectionMatrix;
     projectionMatrix.BuildOrthographicProjection(4, 3, 0, 20);
 
     // At this point our stuff will be in projection space which isn't quite screen space but we need to do a few things before that
-    // Normally we'd do a transform from object to world but we're treating the test box as being at origin for now
     // Also in a right handed system so multiplies go right to left
     Matrix transformMatrix = projectionMatrix * viewMatrix * worldMatrix;
-    for (int i = 0; i < box.size(); ++i)
+
+    for (int i = 0; i < box.faces.size(); ++i)
     {
-        Vector3 point = transformMatrix.Transform(box[i]);
+        Vector3 p1 = Project(screen, box.vertices[box.faces[i].a], transformMatrix);
+        Vector3 p2 = Project(screen, box.vertices[box.faces[i].b], transformMatrix);
+        Vector3 p3 = Project(screen, box.vertices[box.faces[i].c], transformMatrix);
+
+        float graylevel = 0.25f + (i * 0.75f / box.faces.size());
+        Uint8 color = (Uint8)(graylevel * 255);
+
+        DrawTriangle(screen, Point(p1.x, p1.y), Point(p2.x, p2.y), Point(p3.x, p3.y), Color(0xFFFFFF));
+        FillTriangle(screen, Vertex(p1.x, p1.y, color, color, color), Vertex(p2.x, p2.y, color, color, color), Vertex(p3.x, p3.y, color, color, color));
+    }
+}
+
+/// Stuff to do later
+/*
+    // If this spinning box left a trail on the points it could be a cool visualizer
+    // Like it could scale with amplitude and rotate with frequency or do other cool shit
+    Mesh box;
+    box.vertices.push_back(Vector3(-1.0f, 1.0f, 1.0f));
+    box.vertices.push_back(Vector3(1.0f, 1.0f, 1.0f));
+    box.vertices.push_back(Vector3(-1.0f, -1.0f, 1.0f));
+    box.vertices.push_back(Vector3(-1.0f, -1.0f, -1.0f));
+    box.vertices.push_back(Vector3(-1.0f, 1.0f, -1.0f));
+    box.vertices.push_back(Vector3(1.0f, 1.0f, -1.0f));
+    box.vertices.push_back(Vector3(1.0f, -1.0f, 1.0f));
+    box.vertices.push_back(Vector3(1.0f, -1.0f, -1.0f));
+
+    Camera camera;
+    camera.position = Vector3(2.0f, 0.0f, 3.0f);
+    camera.target = Vector3(0.0f, 0.0f, 0.0f);
+
+    float currsecond = (SDL_GetTicks() % 1000) / 1000.0f;
+    box.rotation.x = 2 * M_PI * currsecond;
+    box.rotation.y = 2 * M_PI * currsecond;
+
+    Matrix objectRotation;
+    objectRotation.BuildYawPitchRoll(box.rotation.y, box.rotation.x, box.rotation.z);
+
+    Matrix objectTranslation;
+    objectTranslation.BuildTranslation(box.position);
+
+    Matrix worldMatrix = objectTranslation * objectRotation;
+
+    Matrix viewMatrix;
+    viewMatrix.BuildLookAt(camera.position, camera.target, Vector3(0, 1, 0));
+
+    Matrix projectionMatrix;
+    projectionMatrix.BuildOrthographicProjection(4, 3, 0, 20);
+
+    // At this point our stuff will be in projection space which isn't quite screen space but we need to do a few things before that
+    // Also in a right handed system so multiplies go right to left
+    Matrix transformMatrix = projectionMatrix * viewMatrix * worldMatrix;
+    for (int i = 0; i < box.vertices.size(); ++i)
+    {
+        Vector3 point = transformMatrix.Transform(box.vertices[i]);
         Point screenPoint = Point(
             ((screen->w / 2) * point.x) + (screen->w / 2),
             -(((screen->h / 2) * point.y) - (screen->h / 2))
@@ -337,4 +441,4 @@ void Draw(SDL_Surface* screen)
             DrawPoint(screen, screenPoint, Color(0xFFFFFF));
         }
     }
-}
+*/

@@ -3,22 +3,35 @@
 
 #include <SDL/SDL.h>
 #include "color.h"
+#include "vector3.h"
+#include "matrix.h"
 
 class Device
 {
 public:
-    Device(SDL_Surface* _screen)
-        :screen(_screen)
-    {}
+    Device(SDL_Surface* _screen);
+    ~Device();
 
-    void PutPixel(int x, int y, Color c = Color(0xFFFFFF))
-    {
-        Uint32* pixels = (Uint32 *)screen->pixels;
-        pixels[x + y * screen->w] = SDL_MapRGBA(screen->format, c.r, c.g, c.b, c.a);
-    }
+    // Clears the screen buffer to the given color
+    void Clear(Color color);
+
+    // Puts a pixel on the screen ignoring the depthbuffer and clip checks
+    void PutPixel(int x, int y, Color c = Color(0xFFFFFF));
+
+    // Puts a pixel on the screen only if it passes our depth buffer test and ignoring clipping
+    void PutPixel(int x, int y, float z, Color c = Color(0xFFFFFF));
+
+    // Draws a point on the screen if it's within the viewport
+    void DrawPoint(Vector3 point, Color color);
+
+    // Returns a new vector projected onto the screen using the completed transformation matrix
+    Vector3 Project(const Vector3& v, const Matrix& transform) const;
 
 private:
     SDL_Surface* screen;
+    float* depthBuffer;
+    int renderWidth;
+    int renderHeight;
 };
 
 #endif

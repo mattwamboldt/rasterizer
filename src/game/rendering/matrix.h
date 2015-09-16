@@ -23,8 +23,8 @@ public:
     Vector3 GetPosition();
 
     // Applys the current matrix to the given vector to produce a new one
-    Vector3 Transform(const Vector3& v);
-    Vector4 Transform(const Vector4& v);
+    Vector3 Transform(const Vector3& v) const;
+    Vector4 Transform(const Vector4& v) const;
 
     // Attempts to calculate the inverse of the matrix, not all have one
     Matrix Inverse();
