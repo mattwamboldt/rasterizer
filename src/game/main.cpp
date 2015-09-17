@@ -5,6 +5,7 @@
 #include "perftimer.h"
 
 #include "rendering\tests.h"
+#include "rendering\mesh.h"
 
 const int SCREEN_WIDTH = 1024;
 const int SCREEN_HEIGHT = 768;
@@ -17,6 +18,7 @@ SDL_Surface* gScreenSurface = NULL;
 
 //The image we will load and show on the screen
 SDL_Surface* gHelloWorld = NULL;
+Mesh gMesh;
 
 //Starts up SDL and creates window
 bool init();
@@ -83,7 +85,7 @@ int main( int argc, char* args[] )
 					
 					//Apply the image
                     SDL_FillRect(gScreenSurface, NULL, 0x000000);
-                    Draw(gScreenSurface);
+                    Draw(gScreenSurface, gMesh);
 					SDL_UpdateWindowSurface( gWindow );
 				}
 			}
@@ -142,6 +144,12 @@ bool loadMedia()
     if( gHelloWorld == NULL )
     {
         Debug::console("Unable to load image %s! SDL Error: %s\n", "data/cat.bmp", SDL_GetError() );
+        success = false;
+    }
+
+    if (!gMesh.ReadTestFormat("data/suzanne.obj"))
+    {
+        Debug::console("Unable to load obj file %s! SDL Error: %s\n", "data/suzanne.obj", SDL_GetError());
         success = false;
     }
 

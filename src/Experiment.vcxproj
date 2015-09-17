@@ -126,6 +126,7 @@ xcopy /d /f /y /s dll "$(OutDir)"
     <ClCompile Include="game\perftimer.cpp" />
     <ClCompile Include="game\rendering\device.cpp" />
     <ClCompile Include="game\rendering\matrix.cpp" />
+    <ClCompile Include="game\rendering\mesh.cpp" />
     <ClCompile Include="game\rendering\tests.cpp" />
     <ClCompile Include="game\rendering\vector3.cpp" />
     <ClCompile Include="game\rendering\vector4.cpp" />

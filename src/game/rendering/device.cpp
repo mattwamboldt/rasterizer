@@ -29,7 +29,7 @@ void Device::Clear(Color color)
 }
 
 // Draws a pixel to the screen ignoring the depthbuffer
-void Device::PutPixel(int x, int y, Color c = Color(0xFFFFFF))
+void Device::PutPixel(int x, int y, Color c)
 {
     Uint32* pixels = (Uint32 *)screen->pixels;
     Uint32 index = x + y * renderWidth;
@@ -37,7 +37,7 @@ void Device::PutPixel(int x, int y, Color c = Color(0xFFFFFF))
 }
 
 // Draws a pixel to the screen only if it passes our depth buffer test
-void Device::PutPixel(int x, int y, float z, Color c = Color(0xFFFFFF))
+void Device::PutPixel(int x, int y, float z, Color c)
 {
     Uint32* pixels = (Uint32 *)screen->pixels;
     Uint32 index = x + y * renderWidth;
@@ -58,6 +58,14 @@ void Device::DrawPoint(Vector3 point, Color color)
     {
         // Drawing a point
         PutPixel((int)point.x, (int)point.y, point.z, color);
+    }
+}
+
+void Device::DrawPoint(int x, int y, const Color& c)
+{
+    if (x >= 0 && x < screen->w && y >= 0 && y < screen->h)
+    {
+        PutPixel(x, y, c);
     }
 }
 

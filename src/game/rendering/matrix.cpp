@@ -165,12 +165,15 @@ void Matrix::BuildLookAt(const Vector3& eye, const Vector3& at, const Vector3& u
     values[2][0] = zaxis.x; values[2][1] = zaxis.y; values[2][2] = zaxis.z; values[2][3] = nEye.Dot(zaxis);
 }
 
-void Matrix::BuildOrthographicProjection(float width, float height, float nearClip, float farClip)
+void Matrix::BuildOrthographicProjection(float bottom, float top, float left, float right, float near, float far)
 {
-    values[0][0] = 1.0f / width;
-    values[1][1] = 1.0f / height;
-    values[2][2] = -2.0f / (farClip - nearClip);
-    values[3][2] = -((farClip + nearClip) / (farClip - nearClip));
+    values[0][0] = 2.0f / (right - left);
+    values[1][1] = 2.0f / (top - bottom);
+    values[2][2] = -2.0f / (far - near);
+
+    values[0][3] = -(right + left) / (right - left);
+    values[1][3] = -(top + bottom) / (top - bottom);
+    values[2][3] = -(far + near) / (far - near);
     values[3][3] = 1;
 }
 

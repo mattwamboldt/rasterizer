@@ -6,6 +6,7 @@
 
 struct Face
 {
+    Face() {}
     Face(int _a, int _b, int _c)
         : a(_a), b(_b), c(_c)
     {}
@@ -17,10 +18,14 @@ struct Face
 
 struct Mesh
 {
+    // Will read obj format for now
+    bool ReadTestFormat(std::string filename);
+
     std::vector<Vector3> vertices;
     std::vector<Face> faces;
     Vector3 position;
     Vector3 rotation;
+    std::string name;
 };
 
 #endif
