@@ -3,7 +3,8 @@
 
 #include <SDL/SDL.h>
 #include "mesh.h"
+#include "device.h"
 
-void Draw(SDL_Surface* screen, Mesh& mesh);
+void Draw(Device* screen, Mesh& mesh);
 
 #endif

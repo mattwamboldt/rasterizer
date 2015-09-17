@@ -51,13 +51,13 @@ void Device::PutPixel(int x, int y, float z, Color c)
 }
 
 // Draws a point to the screen if it is within the viewport
-void Device::DrawPoint(Vector3 point, Color color)
+void Device::DrawPoint(float x, float y, float z, Color color)
 {
     // Clipping what's visible on screen
-    if (point.x >= 0 && point.y >= 0 && point.x < renderWidth && point.y < renderHeight)
+    if (x >= 0 && y >= 0 && x < renderWidth && y < renderHeight)
     {
         // Drawing a point
-        PutPixel((int)point.x, (int)point.y, point.z, color);
+        PutPixel((int)x, (int)y, z, color);
     }
 }
 

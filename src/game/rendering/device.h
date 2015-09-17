@@ -22,7 +22,8 @@ public:
     void PutPixel(int x, int y, float z, Color c = Color(0xFFFFFF));
 
     // Draws a point on the screen if it's within the viewport, taking into account depth
-    void DrawPoint(Vector3 point, Color color);
+    void DrawPoint(float x, float y, float z, Color color);
+    inline void DrawPoint(Vector3 point, Color color) { DrawPoint(point.x, point.y, point.z, color); }
 
     // Draws a point on the screen if it's within the viewport, ignoring depth
     void DrawPoint(int x, int y, const Color& c);

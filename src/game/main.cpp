@@ -6,6 +6,7 @@
 
 #include "rendering\tests.h"
 #include "rendering\mesh.h"
+#include "rendering\device.h"
 
 const int SCREEN_WIDTH = 1024;
 const int SCREEN_HEIGHT = 768;
@@ -19,6 +20,7 @@ SDL_Surface* gScreenSurface = NULL;
 //The image we will load and show on the screen
 SDL_Surface* gHelloWorld = NULL;
 Mesh gMesh;
+Device* gDevice;
 
 //Starts up SDL and creates window
 bool init();
@@ -83,9 +85,8 @@ int main( int argc, char* args[] )
 						}
 					}
 					
-					//Apply the image
-                    SDL_FillRect(gScreenSurface, NULL, 0x000000);
-                    Draw(gScreenSurface, gMesh);
+                    gDevice->Clear(Color(0x000000));
+                    Draw(gDevice, gMesh);
 					SDL_UpdateWindowSurface( gWindow );
 				}
 			}
@@ -126,6 +127,7 @@ bool init()
         {
             //Get window surface
             gScreenSurface = SDL_GetWindowSurface( gWindow );
+            gDevice = new Device(gScreenSurface);
         }
     }
 
@@ -163,6 +165,11 @@ void close()
     //Deallocate surface
     SDL_FreeSurface( gHelloWorld );
     gHelloWorld = NULL;
+
+    if (gDevice)
+    {
+        delete gDevice;
+    }
 
     //Destroy window
     SDL_DestroyWindow( gWindow );

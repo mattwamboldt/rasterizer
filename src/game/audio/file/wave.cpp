@@ -1,6 +1,6 @@
 #include "wave.h"
 #include "../../debug.h"
-#include "../util.h"
+#include "../../util.h"
 #include <cstring>
 #include <math.h>
 

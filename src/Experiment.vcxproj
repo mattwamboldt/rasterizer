@@ -119,7 +119,7 @@ xcopy /d /f /y /s dll "$(OutDir)"
     <ClCompile Include="game\audio\synth\signalgenerator.cpp" />
     <ClCompile Include="game\audio\synth\wavebank.cpp" />
     <ClCompile Include="game\audio\synth\wavetable.cpp" />
-    <ClCompile Include="game\audio\util.cpp" />
+    <ClCompile Include="game\util.cpp" />
     <ClCompile Include="game\audio\wavefunctions.cpp" />
     <ClCompile Include="game\debug.cpp" />
     <ClCompile Include="game\main.cpp" />
@@ -157,7 +157,7 @@ xcopy /d /f /y /s dll "$(OutDir)"
     <ClInclude Include="game\audio\synth\wavebank.h" />
     <ClInclude Include="game\audio\synth\wavetable.h" />
     <ClInclude Include="game\audio\types.h" />
-    <ClInclude Include="game\audio\util.h" />
+    <ClInclude Include="game\util.h" />
     <ClInclude Include="game\audio\wavefunctions.h" />
     <ClInclude Include="game\debug.h" />
     <ClInclude Include="game\perftimer.h" />

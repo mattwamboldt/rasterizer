@@ -10,6 +10,7 @@
 #include "mesh.h"
 #include "camera.h"
 #include "device.h"
+#include "..\util.h"
 
 // This is used to run random softawre rasterizing tests
 
@@ -29,11 +30,11 @@ struct Vertex
     {}
 
     Vertex(const Vector3& v, Color c = Color())
-        : x((int)(v.x)), y((int)(v.y)), z((int)(v.z)), color(c)
+        : x((int)(v.x)), y((int)(v.y)), z(v.z), color(c)
     {}
 
     Vertex(float _x, float _y, float _z, Color c = Color())
-        : x((int)(_x)), y((int)(_y)), z((int)(_z)), color(c)
+        : x((int)(_x)), y((int)(_y)), z(_z), color(c)
     {}
 
     float x;
@@ -191,60 +192,55 @@ void DrawTrapezoid(Device* screen, const Point& origin, Uint32 width, Uint32 hei
     DrawLineBresenham(screen, ll, ul, c);
 }
 
-void FillBottomFlatTriangle(Device* screen, const Vertex& v1, const Vertex& v2, const Vertex& v3)
+Uint8 lerp(Uint8 min, Uint8 max, float gradient)
 {
-    float invslope1 = (v2.x - v1.x) / (v2.y - v1.y);
-    float invslope2 = (v3.x - v1.x) / (v3.y - v1.y);
+    return min + (Uint8)((max - min) * gradient);
+}
 
-    // Since we always assume left to right drawing we need the bigger slope to be x2
-    // This will still produce the correct triangle because the bounds of the line stay the same
-    if (invslope1 > invslope2)
+Color lerp(Color start, Color end, float gradient)
+{
+    return Color(
+        lerp(start.r, end.r, gradient),
+        lerp(start.g, end.g, gradient),
+        lerp(start.b, end.b, gradient),
+        lerp(start.a, end.a, gradient)
+    );
+}
+
+void DrawScanline(Device* screen, int y, Vertex pa, Vertex pb, Vertex pc, Vertex pd)
+{
+    // Note this isn't the fatest way as these gradients could be found using precomputation and additions
+    float gradientLeft = pa.y != pb.y ? (y - pa.y) / (pb.y - pa.y) : 1;
+    float gradientRight = pc.y != pd.y ? (y - pc.y) / (pd.y - pc.y) : 1;
+
+    int startX = (int)lerp(pa.x, pb.x, gradientLeft);
+    int endX = (int)lerp(pc.x, pd.x, gradientRight);
+
+    float z1 = lerp(pa.z, pb.z, gradientLeft);
+    float z2 = lerp(pc.z, pd.z, gradientRight);
+
+    if (startX > endX)
     {
-        std::swap(invslope1, invslope2);
+        std::swap(startX, endX);
+        std::swap(z1, z2);
     }
 
-    float x1 = v1.x;
-    float x2 = v1.x;
-    for (int y = v1.y; y <= v2.y; ++y)
+    for (int x = startX; x <= endX; ++x)
     {
-        for (int x = (int)x1; x <= x2; ++x)
-        {
-            screen->DrawPoint(x, y, v1.color);
-        }
-
-        x1 += invslope1;
-        x2 += invslope2;
+        float gradientX = (x - startX) / (float)(endX - startX);
+        screen->DrawPoint(x, y, lerp(z1, z2, gradientX), pa.color);
     }
 }
 
-void FillTopFlatTriangle(Device* screen, const Vertex& v1, const Vertex& v2, const Vertex& v3)
+// determine on which side of a 2D line a 2D point is
+// returns positive values for "right", negative values for "left", and zero if point is on line
+float VertexDirection(Vertex p, Vertex start, Vertex end)
 {
-    float invslope1 = (v3.x - v1.x) / (v3.y - v1.y);
-    float invslope2 = (v3.x - v2.x) / (v3.y - v2.y);
-
-    if (invslope1 < invslope2)
-    {
-        std::swap(invslope1, invslope2);
-    }
-
-    float x1 = v3.x;
-    float x2 = v3.x;
-
-    for (int y = v3.y; y > v1.y; --y)
-    {
-        for (int x = x1; x <= x2; ++x)
-        {
-            screen->DrawPoint(x, y, v1.color);
-        }
-
-        x1 -= invslope1;
-        x2 -= invslope2;
-    }
+    return (p.x - start.x) * (end.y - start.y) - (end.x - start.x) * (p.y - start.y);
 }
 
-// The stadard approach for filling a triangle is to actually fill two triangles
-// Its easy to draw a flat bottomed or topped triangle, so we split any that are not,
-// in half and render them separately
+// New algorithm for rasterizing the triangle uses more interpolation to simplify
+// editing later values. It draws the whole trangle instead of a top half bottom half like before
 void FillTriangle(Device* screen, Vertex v1, Vertex v2, Vertex v3)
 {
     // First we need to vertically sort the vertices so v1 is on top
@@ -263,67 +259,47 @@ void FillTriangle(Device* screen, Vertex v1, Vertex v2, Vertex v3)
         std::swap(v2, v3);
     }
 
-    // Check if we already have a flat bottom or top
-    if (v2.y == v3.y)
+    // We draw a right facing triangle one way
+    if (VertexDirection(v2, v1, v3) > 0)
     {
-        FillBottomFlatTriangle(screen, v1, v2, v3);
+        for (int y = (int)v1.y; y <= (int)v3.y; y++)
+        {
+            if (y < v2.y)
+            {
+                DrawScanline(screen, y, v1, v3, v1, v2);
+            }
+            else
+            {
+                DrawScanline(screen, y, v1, v3, v2, v3);
+            }
+        }
     }
-    else if (v1.y == v2.y)
-    {
-        FillTopFlatTriangle(screen, v1, v2, v3);
-    }
+    // and a left facing triangle the opposite way
     else
     {
-        // Find a vertex to split the triangle
-        Vertex v4 = Vertex(v1.x + ((v2.y - v1.y) / (v3.y - v1.y)) * (v3.x - v1.x), v2.y, v1.x + ((v2.y - v1.y) / (v3.y - v1.y)) * (v3.z - v1.z));
-        FillBottomFlatTriangle(screen, v1, v2, v4);
-        FillTopFlatTriangle(screen, v2, v4, v3);
+        for (int y = (int)v1.y; y <= (int)v3.y; y++)
+        {
+            if (y < v2.y)
+            {
+                DrawScanline(screen, y, v1, v2, v1, v3);
+            }
+            else
+            {
+                DrawScanline(screen, y, v2, v3, v1, v3);
+            }
+        }
     }
 }
 
 Vector3 Project(Device* screen, Vector3 v, const Matrix& transform)
 {
+    // Trying to prevent weird holes in the geometry by reducing the risk of floating point errors later on
     Vector3 projectedVector = transform.Transform(v);
     return Vector3(
         ((screen->Width() / 2) * projectedVector.x) + (screen->Width() / 2),
         -(((screen->Height() / 2) * projectedVector.y) - (screen->Height() / 2)),
         projectedVector.z
     );
-}
-
-void DrawMeshCombinedMatrix(Device* screen, const Mesh& mesh, const Matrix& projection, const Matrix& view)
-{
-    Matrix objectRotation;
-    objectRotation.BuildYawPitchRoll(mesh.rotation.y, mesh.rotation.x, mesh.rotation.z);
-
-    Matrix objectTranslation;
-    objectTranslation.BuildTranslation(mesh.position);
-
-    Matrix worldMatrix = objectTranslation * objectRotation;
-
-    // At this point our stuff will be in projection space which isn't quite screen space but we need to do a few things before that
-    // Also in a right handed system so multiplies go right to left
-    Matrix transformMatrix = projection * (view * worldMatrix);
-
-    for (int i = 0; i < mesh.faces.size(); ++i)
-    {
-        Vector3 v1 = mesh.vertices[mesh.faces[i].a];
-        Vector3 v2 = mesh.vertices[mesh.faces[i].b];
-        Vector3 v3 = mesh.vertices[mesh.faces[i].c];
-
-        v1 = worldMatrix.Transform(v1);
-
-        Vector3 p1 = Project(screen, mesh.vertices[mesh.faces[i].a], transformMatrix);
-        Vector3 p2 = Project(screen, mesh.vertices[mesh.faces[i].b], transformMatrix);
-        Vector3 p3 = Project(screen, mesh.vertices[mesh.faces[i].c], transformMatrix);
-
-        float graylevel = 0.25f + (i * 0.75f / mesh.faces.size());
-        Uint8 color = (Uint8)(graylevel * 255);
-        Color faceColor = Color(color, color, color);
-
-        DrawTriangle(screen, Point(p1.x, p1.y), Point(p2.x, p2.y), Point(p3.x, p3.y), Color(0xFFFFFF));
-        FillTriangle(screen, Vertex(p1, faceColor), Vertex(p2, faceColor), Vertex(p3, faceColor));
-    }
 }
 
 void DrawMesh(Device* screen, const Mesh& mesh, const Matrix& projection, const Matrix& view)
@@ -342,35 +318,20 @@ void DrawMesh(Device* screen, const Mesh& mesh, const Matrix& projection, const 
 
     for (int i = 0; i < mesh.faces.size(); ++i)
     {
-        Vector3 v1 = mesh.vertices[mesh.faces[i].a];
-        Vector3 v2 = mesh.vertices[mesh.faces[i].b];
-        Vector3 v3 = mesh.vertices[mesh.faces[i].c];
-
-        v1 = worldMatrix.Transform(v1);
-        v2 = worldMatrix.Transform(v2);
-        v3 = worldMatrix.Transform(v3);
-
-        v1 = view.Transform(v1);
-        v2 = view.Transform(v2);
-        v3 = view.Transform(v3);
-
-        Vector3 p1 = Project(screen, v1, projection);
-        Vector3 p2 = Project(screen, v2, projection);
-        Vector3 p3 = Project(screen, v3, projection);
+        Vector3 p1 = Project(screen, mesh.vertices[mesh.faces[i].a], transformMatrix);
+        Vector3 p2 = Project(screen, mesh.vertices[mesh.faces[i].b], transformMatrix);
+        Vector3 p3 = Project(screen, mesh.vertices[mesh.faces[i].c], transformMatrix);
 
         float graylevel = 0.25f + (i * 0.75f / mesh.faces.size());
         Uint8 color = (Uint8)(graylevel * 255);
         Color faceColor = Color(color, color, color);
 
-        DrawTriangle(screen, Point(p1.x, p1.y), Point(p2.x, p2.y), Point(p3.x, p3.y), Color(0xFFFFFF));
         FillTriangle(screen, Vertex(p1, faceColor), Vertex(p2, faceColor), Vertex(p3, faceColor));
     }
 }
 
-void Draw(SDL_Surface* _screen, Mesh& mesh)
+void Draw(Device* screen, Mesh& mesh)
 {
-    Device screen(_screen);
-
     // 3d rendering tests
     Mesh box;
     box.vertices.push_back(Vector3(-1.0f, 1.0f, 1.0f));
@@ -400,25 +361,25 @@ void Draw(SDL_Surface* _screen, Mesh& mesh)
     box.faces.push_back(Face(4, 5, 6));
     box.faces.push_back(Face(4, 6, 7));
 
-    Camera camera;
-    camera.position = Vector3(0.0f, 0.0f, 6.0f);
-    camera.target = Vector3(0.0f, 0.0f, 0.0f);
-
     float rotationsPerSecond = 0.25f;
     float currsecond = ((int)(SDL_GetTicks() * rotationsPerSecond) % 1000) / 1000.0f;
+
+    Camera camera;
+    camera.position = Vector3(0.0f, sin(2 * M_PI * currsecond) * 3.0f, 5.0f);
+    camera.target = Vector3(0.0f, 0.0f, 0.0f);
+
     box.rotation.x = 2 * M_PI * rotationsPerSecond * currsecond;
     box.rotation.y = 2 * M_PI * currsecond;
-    mesh.rotation.y = 2 * M_PI * currsecond;
-
-    mesh.position.x = sin(2 * M_PI * currsecond) * 3.0f;
+    //mesh.rotation.y = 2 * M_PI * currsecond;
+    //mesh.position.x = sin(2 * M_PI * currsecond) * 3.0f;
 
     Matrix viewMatrix;
     viewMatrix.BuildLookAt(camera.position, camera.target, Vector3(0, 1, 0));
 
     Matrix projectionMatrix;
-    projectionMatrix.BuildOrthographicProjection(-3, 3, -4, 4, 0, 10);
+    projectionMatrix.BuildOrthographicProjection(-3, 3, -4, 4, 0, 2);
 
-    DrawMesh(&screen, mesh, projectionMatrix, viewMatrix);
+    DrawMesh(screen, mesh, projectionMatrix, viewMatrix);
 }
 
 /// Stuff to do later

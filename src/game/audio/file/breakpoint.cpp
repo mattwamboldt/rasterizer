@@ -4,7 +4,7 @@
 #include <math.h>
 
 #include "../../debug.h"
-#include "../util.h"
+#include "../../util.h"
 
 namespace Audio
 {
