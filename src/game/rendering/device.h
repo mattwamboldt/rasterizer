@@ -34,6 +34,8 @@ public:
     int Width(){ return renderWidth; }
     int Height(){ return renderHeight; }
 
+    void WriteToFile(const char* filename);
+
 private:
     SDL_Surface* screen;
     float* depthBuffer;
