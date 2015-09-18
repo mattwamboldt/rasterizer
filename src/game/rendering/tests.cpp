@@ -26,21 +26,19 @@ struct Point
 
 struct Vertex
 {
-    Vertex()
-        : x(0.0f), y(0.0f), z(0.0f), color(Color())
+    Vertex(){}
+
+    Vertex(const Vector3& v, Color c = Color(0xFFFFFF))
+        : position(v), color(c)
     {}
 
-    Vertex(const Vector3& v, Color c = Color())
-        : x((int)(v.x)), y((int)(v.y)), z(v.z), color(c)
+    Vertex(float _x, float _y, float _z, Color c = Color(0xFFFFFF))
+        : position(_x, _y, _z), color(c)
     {}
 
-    Vertex(float _x, float _y, float _z, Color c = Color())
-        : x((int)(_x)), y((int)(_y)), z(_z), color(c)
-    {}
-
-    float x;
-    float y;
-    float z;
+    Vector3 position;
+    Vector3 normal;
+    Vector3 worldPosition;
     Color color;
 };
 
@@ -208,8 +206,13 @@ Color lerp(Color start, Color end, float gradient)
     );
 }
 
-void DrawScanline(Device* screen, int y, Vertex pa, Vertex pb, Vertex pc, Vertex pd)
+void DrawScanline(Device* screen, int y, Vertex va, Vertex vb, Vertex vc, Vertex vd, Color color)
 {
+    const Vector3& pa = va.position;
+    const Vector3& pb = vb.position;
+    const Vector3& pc = vc.position;
+    const Vector3& pd = vd.position;
+
     // Note this isn't the fatest way as these gradients could be found using precomputation and additions
     float gradientLeft = pa.y != pb.y ? (y - pa.y) / (pb.y - pa.y) : 1;
     float gradientRight = pc.y != pd.y ? (y - pc.y) / (pd.y - pc.y) : 1;
@@ -229,7 +232,7 @@ void DrawScanline(Device* screen, int y, Vertex pa, Vertex pb, Vertex pc, Vertex
     for (int x = startX; x < endX; ++x)
     {
         float gradientX = (x - startX) / (float)(endX - startX);
-        screen->DrawPoint(x, y, lerp(z1, z2, gradientX), pa.color);
+        screen->DrawPoint(x, y, lerp(z1, z2, gradientX), color);
     }
 }
 
@@ -237,56 +240,77 @@ void DrawScanline(Device* screen, int y, Vertex pa, Vertex pb, Vertex pc, Vertex
 // returns positive values for "right", negative values for "left", and zero if point is on line
 float VertexDirection(Vertex p, Vertex start, Vertex end)
 {
-    return (p.x - start.x) * (end.y - start.y) - (end.x - start.x) * (p.y - start.y);
+    return (p.position.x - start.position.x) * (end.position.y - start.position.y) - (end.position.x - start.position.x) * (p.position.y - start.position.y);
+}
+
+Vector3 Normal(const Vector3& v1, const Vector3& v2, const Vector3& v3)
+{
+    Vector3 a = v2 - v1;
+    Vector3 b = v3 - v1;
+    Vector3 normal = a.Cross(b);
+    normal.Normalize();
+    return normal;
 }
 
 // New algorithm for rasterizing the triangle uses more interpolation to simplify
 // editing later values. It draws the whole trangle instead of a top half bottom half like before
 void FillTriangle(Device* screen, Vertex v1, Vertex v2, Vertex v3)
 {
+    // For lighting we calculate the surface normals
+    Vector3 surfaceNormal = Normal(v1.worldPosition, v2.worldPosition, v3.worldPosition);
+    Vector3 centerSurface = (v1.worldPosition + v2.worldPosition + v3.worldPosition) / 3;
+
     // First we need to vertically sort the vertices so v1 is on top
-    if (v2.y > v3.y)
+    if (v2.position.y > v3.position.y)
     {
         std::swap(v2, v3);
     }
 
-    if (v1.y > v2.y)
+    if (v1.position.y > v2.position.y)
     {
         std::swap(v1, v2);
     }
 
-    if (v2.y > v3.y)
+    if (v2.position.y > v3.position.y)
     {
         std::swap(v2, v3);
     }
 
+    // Calculate our lighting values
+    Vector3 light(0, 10, 10);
+    Vector3 lightDirection = light - centerSurface;
+    lightDirection.Normalize();
+    float lightIntensity = SDL_max(0.0f, surfaceNormal.Dot(lightDirection));
+    Color color(0xFFFFFF);
+    color *= lightIntensity;
+
     // We draw a right facing triangle one way
     if (VertexDirection(v2, v1, v3) > 0)
     {
-        for (int y = (int)v1.y; y <= (int)v3.y; y++)
+        for (int y = (int)v1.position.y; y <= (int)v3.position.y; y++)
         {
-            if (y < v2.y)
+            if (y < v2.position.y)
             {
-                DrawScanline(screen, y, v1, v3, v1, v2);
+                DrawScanline(screen, y, v1, v3, v1, v2, color);
             }
             else
             {
-                DrawScanline(screen, y, v1, v3, v2, v3);
+                DrawScanline(screen, y, v1, v3, v2, v3, color);
             }
         }
     }
     // and a left facing triangle the opposite way
     else
     {
-        for (int y = (int)v1.y; y <= (int)v3.y; y++)
+        for (int y = (int)v1.position.y; y <= (int)v3.position.y; y++)
         {
-            if (y < v2.y)
+            if (y < v2.position.y)
             {
-                DrawScanline(screen, y, v1, v2, v1, v3);
+                DrawScanline(screen, y, v1, v2, v1, v3, color);
             }
             else
             {
-                DrawScanline(screen, y, v2, v3, v1, v3);
+                DrawScanline(screen, y, v2, v3, v1, v3, color);
             }
         }
     }
@@ -297,8 +321,8 @@ Vector3 Project(Device* screen, Vector3 v, const Matrix& transform)
     // Trying to prevent weird holes in the geometry by reducing the risk of floating point errors later on
     Vector3 projectedVector = transform.Transform(v);
     return Vector3(
-        ((screen->Width() / 2) * projectedVector.x) + (screen->Width() / 2),
-        -(((screen->Height() / 2) * projectedVector.y) - (screen->Height() / 2)),
+        (int)((screen->Width() / 2) * projectedVector.x) + (screen->Width() / 2),
+        (int)(-(((screen->Height() / 2) * projectedVector.y) - (screen->Height() / 2))),
         projectedVector.z
     );
 }
@@ -320,19 +344,22 @@ void DrawMesh(Device* screen, const Mesh& mesh, const Matrix& projection, const 
     for (int i = 0; i < mesh.faces.size(); ++i)
     {
         Face face = mesh.faces[i];
-        Vector3 v1 = mesh.vertices[face.a];
-        Vector3 v2 = mesh.vertices[face.b];
-        Vector3 v3 = mesh.vertices[face.c];
 
-        Vector3 p1 = Project(screen, v1, transformMatrix);
-        Vector3 p2 = Project(screen, v2, transformMatrix);
-        Vector3 p3 = Project(screen, v3, transformMatrix);
+        // Grab our raw vectors
+        Vector3 p1 = mesh.vertices[face.a];
+        Vector3 p2 = mesh.vertices[face.b];
+        Vector3 p3 = mesh.vertices[face.c];
 
-        float graylevel = 0.25f + (i * 0.75f / mesh.faces.size());
-        Uint8 color = (Uint8)(graylevel * 255);
-        Color faceColor = Color(color, color, color);
+        Vertex v1(Project(screen, p1, transformMatrix));
+        Vertex v2(Project(screen, p2, transformMatrix));
+        Vertex v3(Project(screen, p3, transformMatrix));
 
-        FillTriangle(screen, Vertex(p1, faceColor), Vertex(p2, faceColor), Vertex(p3, faceColor));
+        // Then calculate world space positions, we'll use this later for normals
+        v1.worldPosition = worldMatrix.Transform(p1);
+        v2.worldPosition = worldMatrix.Transform(p2);
+        v3.worldPosition = worldMatrix.Transform(p3);
+
+        FillTriangle(screen, v1, v2, v3);
     }
 }
 
@@ -349,29 +376,29 @@ void Draw(Device* screen, Mesh& mesh)
     box.vertices.push_back(Vector3(1.0f, -1.0f, -1.0f));
     box.vertices.push_back(Vector3(-1.0f, -1.0f, -1.0f));
 
-    box.faces.push_back(Face(0, 1, 2));
-    box.faces.push_back(Face(1, 2, 3));
+    box.faces.push_back(Face(0, 2, 1));
+    box.faces.push_back(Face(1, 3, 2));
 
-    box.faces.push_back(Face(1, 3, 6));
-    box.faces.push_back(Face(1, 5, 6));
+    box.faces.push_back(Face(1, 6, 3));
+    box.faces.push_back(Face(1, 6, 5));
 
-    box.faces.push_back(Face(0, 1, 4));
-    box.faces.push_back(Face(1, 4, 5));
+    box.faces.push_back(Face(0, 4, 1));
+    box.faces.push_back(Face(1, 5, 4));
 
-    box.faces.push_back(Face(2, 3, 7));
-    box.faces.push_back(Face(3, 6, 7));
+    box.faces.push_back(Face(2, 7, 3));
+    box.faces.push_back(Face(3, 7, 6));
 
-    box.faces.push_back(Face(0, 2, 7));
-    box.faces.push_back(Face(0, 4, 7));
+    box.faces.push_back(Face(0, 7, 2));
+    box.faces.push_back(Face(0, 7, 4));
 
-    box.faces.push_back(Face(4, 5, 6));
-    box.faces.push_back(Face(4, 6, 7));
+    box.faces.push_back(Face(4, 6, 5));
+    box.faces.push_back(Face(4, 7, 6));
 
     float rotationsPerSecond = 0.25f;
     float currsecond = ((int)(SDL_GetTicks() * rotationsPerSecond) % 1000) / 1000.0f;
 
     Camera camera;
-    camera.position = Vector3(0.0f, 0.0f, 5.0f);
+    camera.position = Vector3(0.0f, 0.0f, 2.0f);
     camera.target = Vector3(0.0f, 0.0f, 0.0f);
 
     //box.rotation.x = 2 * M_PI * rotationsPerSecond * currsecond;
@@ -382,8 +409,10 @@ void Draw(Device* screen, Mesh& mesh)
     Matrix viewMatrix;
     viewMatrix.BuildLookAt(camera.position, camera.target, Vector3(0, 1, 0));
 
+    // TODO: Figure out how to calculate these values from a camera frustum or something
     Matrix projectionMatrix;
-    projectionMatrix.BuildOrthographicProjection(-3, 3, -4, 4, 0, 2);
+    // projectionMatrix.BuildOrthographicProjection(-3, 3, -4, 4, 0, 2); // Ortho version test
+    projectionMatrix.BuildPerspectiveProjection(-3, 3, -4, 4, 1, 100); // Ortho version test
 
     DrawMesh(screen, mesh, projectionMatrix, viewMatrix);
 }

@@ -56,8 +56,9 @@ public:
     void BuildLookAt(const Vector3& eye, const Vector3& at, const Vector3& up);
 
     // These two functions generate our projection matrix which transforms vetrices from camera space into projection space
+    // They use a bounding box like openGL mening they may not be the best for accuracy depending on distance or efficiency
     void BuildOrthographicProjection(float bottom, float top, float left, float right, float near, float far);
-    void BuildPerspectiveProjection(float fovx, float fovy, float nearClip, float farClip);
+    void BuildPerspectiveProjection(float bottom, float top, float left, float right, float near, float far);
 
     // Used for debugging
     void console() const;
