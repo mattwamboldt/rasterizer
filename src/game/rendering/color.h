@@ -29,6 +29,13 @@ struct Color
         a = (argb >> 24) & 255;
     }
 
+    void operator*=(float value)
+    {
+        r *= value;
+        g *= value;
+        b *= value;
+    }
+
     Uint8 r;
     Uint8 g;
     Uint8 b;
