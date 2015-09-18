@@ -18,7 +18,7 @@ public:
 
     float Length();
     void Normalize();
-    float Dot(const Vector3& v);
+    float Dot(const Vector3& v) const;
     Vector3 Cross(const Vector3& v) const;
 
     friend Vector3 operator+(const Vector3& v1, const Vector3& v2)

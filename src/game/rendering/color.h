@@ -36,6 +36,11 @@ struct Color
         b *= value;
     }
 
+    friend Color operator*(const Color& c, float value)
+    {
+        return Color(c.r * value, c.g * value, c.b * value);
+    }
+
     Uint8 r;
     Uint8 g;
     Uint8 b;
