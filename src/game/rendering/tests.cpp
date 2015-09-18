@@ -252,6 +252,13 @@ Vector3 Normal(const Vector3& v1, const Vector3& v2, const Vector3& v3)
     return normal;
 }
 
+float LightIntesity(const Vector3& lightSource, const Vector3& position, const Vector3& normal)
+{
+    Vector3 lightDirection = lightSource - position;
+    lightDirection.Normalize();
+    return SDL_max(0.0f, normal.Dot(lightDirection));
+}
+
 // New algorithm for rasterizing the triangle uses more interpolation to simplify
 // editing later values. It draws the whole trangle instead of a top half bottom half like before
 void FillTriangle(Device* screen, Vertex v1, Vertex v2, Vertex v3)
@@ -278,11 +285,11 @@ void FillTriangle(Device* screen, Vertex v1, Vertex v2, Vertex v3)
 
     // Calculate our lighting values
     Vector3 light(0, 10, 10);
-    Vector3 lightDirection = light - centerSurface;
-    lightDirection.Normalize();
-    float lightIntensity = SDL_max(0.0f, surfaceNormal.Dot(lightDirection));
-    Color color(0xFFFFFF);
-    color *= lightIntensity;
+    
+    Color faceColor = Color(0xFFFFFF) * LightIntesity(light, centerSurface, surfaceNormal);
+    v1.color *= LightIntesity(light, v1.worldPosition, surfaceNormal);
+    v2.color *= LightIntesity(light, v2.worldPosition, surfaceNormal);
+    v3.color *= LightIntesity(light, v3.worldPosition, surfaceNormal);
 
     // We draw a right facing triangle one way
     if (VertexDirection(v2, v1, v3) > 0)
@@ -291,11 +298,11 @@ void FillTriangle(Device* screen, Vertex v1, Vertex v2, Vertex v3)
         {
             if (y < v2.position.y)
             {
-                DrawScanline(screen, y, v1, v3, v1, v2, color);
+                DrawScanline(screen, y, v1, v3, v1, v2, faceColor);
             }
             else
             {
-                DrawScanline(screen, y, v1, v3, v2, v3, color);
+                DrawScanline(screen, y, v1, v3, v2, v3, faceColor);
             }
         }
     }
@@ -306,11 +313,11 @@ void FillTriangle(Device* screen, Vertex v1, Vertex v2, Vertex v3)
         {
             if (y < v2.position.y)
             {
-                DrawScanline(screen, y, v1, v2, v1, v3, color);
+                DrawScanline(screen, y, v1, v2, v1, v3, faceColor);
             }
             else
             {
-                DrawScanline(screen, y, v2, v3, v1, v3, color);
+                DrawScanline(screen, y, v2, v3, v1, v3, faceColor);
             }
         }
     }
@@ -366,34 +373,6 @@ void DrawMesh(Device* screen, const Mesh& mesh, const Matrix& projection, const 
 void Draw(Device* screen, Mesh& mesh)
 {
     // 3d rendering tests
-    Mesh box;
-    box.vertices.push_back(Vector3(-1.0f, 1.0f, 1.0f));
-    box.vertices.push_back(Vector3(1.0f, 1.0f, 1.0f));
-    box.vertices.push_back(Vector3(-1.0f, -1.0f, 1.0f));
-    box.vertices.push_back(Vector3(1.0f, -1.0f, 1.0f));
-    box.vertices.push_back(Vector3(-1.0f, 1.0f, -1.0f));
-    box.vertices.push_back(Vector3(1.0f, 1.0f, -1.0f));
-    box.vertices.push_back(Vector3(1.0f, -1.0f, -1.0f));
-    box.vertices.push_back(Vector3(-1.0f, -1.0f, -1.0f));
-
-    box.faces.push_back(Face(0, 2, 1));
-    box.faces.push_back(Face(1, 3, 2));
-
-    box.faces.push_back(Face(1, 6, 3));
-    box.faces.push_back(Face(1, 6, 5));
-
-    box.faces.push_back(Face(0, 4, 1));
-    box.faces.push_back(Face(1, 5, 4));
-
-    box.faces.push_back(Face(2, 7, 3));
-    box.faces.push_back(Face(3, 7, 6));
-
-    box.faces.push_back(Face(0, 7, 2));
-    box.faces.push_back(Face(0, 7, 4));
-
-    box.faces.push_back(Face(4, 6, 5));
-    box.faces.push_back(Face(4, 7, 6));
-
     float rotationsPerSecond = 0.25f;
     float currsecond = ((int)(SDL_GetTicks() * rotationsPerSecond) % 1000) / 1000.0f;
 
@@ -401,8 +380,6 @@ void Draw(Device* screen, Mesh& mesh)
     camera.position = Vector3(0.0f, 0.0f, 2.0f);
     camera.target = Vector3(0.0f, 0.0f, 0.0f);
 
-    //box.rotation.x = 2 * M_PI * rotationsPerSecond * currsecond;
-    //box.rotation.y = 2 * M_PI * currsecond;
     mesh.rotation.y = 2 * M_PI * currsecond;
     //mesh.position.x = sin(2 * M_PI * currsecond) * 3.0f;
 
