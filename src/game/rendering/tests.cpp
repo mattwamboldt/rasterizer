@@ -11,6 +11,7 @@
 #include "camera.h"
 #include "device.h"
 #include "..\util.h"
+#include <sstream>
 
 // This is used to run random softawre rasterizing tests
 
@@ -225,7 +226,7 @@ void DrawScanline(Device* screen, int y, Vertex pa, Vertex pb, Vertex pc, Vertex
         std::swap(z1, z2);
     }
 
-    for (int x = startX; x <= endX; ++x)
+    for (int x = startX; x < endX; ++x)
     {
         float gradientX = (x - startX) / (float)(endX - startX);
         screen->DrawPoint(x, y, lerp(z1, z2, gradientX), pa.color);
@@ -318,9 +319,14 @@ void DrawMesh(Device* screen, const Mesh& mesh, const Matrix& projection, const 
 
     for (int i = 0; i < mesh.faces.size(); ++i)
     {
-        Vector3 p1 = Project(screen, mesh.vertices[mesh.faces[i].a], transformMatrix);
-        Vector3 p2 = Project(screen, mesh.vertices[mesh.faces[i].b], transformMatrix);
-        Vector3 p3 = Project(screen, mesh.vertices[mesh.faces[i].c], transformMatrix);
+        Face face = mesh.faces[i];
+        Vector3 v1 = mesh.vertices[face.a];
+        Vector3 v2 = mesh.vertices[face.b];
+        Vector3 v3 = mesh.vertices[face.c];
+
+        Vector3 p1 = Project(screen, v1, transformMatrix);
+        Vector3 p2 = Project(screen, v2, transformMatrix);
+        Vector3 p3 = Project(screen, v3, transformMatrix);
 
         float graylevel = 0.25f + (i * 0.75f / mesh.faces.size());
         Uint8 color = (Uint8)(graylevel * 255);
@@ -365,12 +371,12 @@ void Draw(Device* screen, Mesh& mesh)
     float currsecond = ((int)(SDL_GetTicks() * rotationsPerSecond) % 1000) / 1000.0f;
 
     Camera camera;
-    camera.position = Vector3(0.0f, sin(2 * M_PI * currsecond) * 3.0f, 5.0f);
+    camera.position = Vector3(0.0f, 0.0f, 5.0f);
     camera.target = Vector3(0.0f, 0.0f, 0.0f);
 
-    box.rotation.x = 2 * M_PI * rotationsPerSecond * currsecond;
-    box.rotation.y = 2 * M_PI * currsecond;
-    //mesh.rotation.y = 2 * M_PI * currsecond;
+    //box.rotation.x = 2 * M_PI * rotationsPerSecond * currsecond;
+    //box.rotation.y = 2 * M_PI * currsecond;
+    mesh.rotation.y = 2 * M_PI * currsecond;
     //mesh.position.x = sin(2 * M_PI * currsecond) * 3.0f;
 
     Matrix viewMatrix;
