@@ -29,7 +29,7 @@ Vector3 Vector3::Cross(const Vector3& v2) const
     return resultant;
 }
 
-float Vector3::Dot(const Vector3& v2)
+float Vector3::Dot(const Vector3& v2) const
 {
     return x * v2.x + y * v2.y + z * v2.z;
 }
