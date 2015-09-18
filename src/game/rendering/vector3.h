@@ -31,6 +31,11 @@ public:
         return Vector3(v1.x - v2.x, v1.y - v2.y, v1.z - v2.z);
     }
 
+    friend Vector3 operator/(const Vector3& v, const float& s)
+    {
+        return Vector3(v.x / s, v.y / s, v.z / s);
+    }
+
     friend Vector3 operator-(const Vector3& v)
     {
         return Vector3(-(v.x), -(v.y), -(v.z));

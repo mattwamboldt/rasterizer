@@ -165,6 +165,7 @@ void Matrix::BuildLookAt(const Vector3& eye, const Vector3& at, const Vector3& u
     values[2][0] = zaxis.x; values[2][1] = zaxis.y; values[2][2] = zaxis.z; values[2][3] = nEye.Dot(zaxis);
 }
 
+// The projection matrices are based on the opengl ones and therfore have all of it's quirks and benefits
 void Matrix::BuildOrthographicProjection(float bottom, float top, float left, float right, float near, float far)
 {
     values[0][0] = 2.0f / (right - left);
@@ -177,13 +178,17 @@ void Matrix::BuildOrthographicProjection(float bottom, float top, float left, fl
     values[3][3] = 1;
 }
 
-void Matrix::BuildPerspectiveProjection(float fovx, float fovy, float nearClip, float farClip)
+void Matrix::BuildPerspectiveProjection(float bottom, float top, float left, float right, float near, float far)
 {
-    values[0][0] = atan(fovx / 2.0f);
-    values[1][1] = atan(fovy / 2.0f);
-    values[2][2] = -((farClip + nearClip) / (farClip - nearClip));
-    values[3][2] = -((2 * nearClip * farClip) / (farClip - nearClip));
-    values[2][3] = -1;
+    values[0][0] = (2 * near) / (right - left);
+    values[1][1] = (2 * near) / (top - bottom);
+    
+    values[0][2] = (right + left) / (right - left);
+    values[1][2] = (top + bottom) / (top - bottom);
+    values[2][2] = -(far + near) / (far - near);
+    values[3][2] = -1;
+    
+    values[2][3] = (-2.0f * far * near) / (far - near);
 }
 
 void Matrix::console() const
