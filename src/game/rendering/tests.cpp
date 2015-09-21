@@ -257,13 +257,13 @@ void FillTriangle(Device* screen, Vertex v1, Vertex v2, Vertex v3, Vector3& surf
     }
 
     // Calculate our lighting values
-    Vector3 light(10, 10, 10);
+    Vector3 light(0, 10, 10);
     
     Vector3 centerSurface = (v1.worldPosition + v2.worldPosition + v3.worldPosition) / 3;
     Color faceColor = Color(0xFFFFFF) * LightIntesity(light, centerSurface, surfaceNormal);
-    v1.color *= LightIntesity(light, v1.worldPosition, surfaceNormal);
-    v2.color *= LightIntesity(light, v2.worldPosition, surfaceNormal);
-    v3.color *= LightIntesity(light, v3.worldPosition, surfaceNormal);
+    v1.color *= LightIntesity(light, v1.worldPosition, v1.normal);
+    v2.color *= LightIntesity(light, v2.worldPosition, v2.normal);
+    v3.color *= LightIntesity(light, v3.worldPosition, v3.normal);
 
     // We draw a right facing triangle one way
     if (VertexDirection(v2, v1, v3) > 0)
@@ -327,19 +327,26 @@ void DrawMesh(Device* screen, const Mesh& mesh, const Matrix& projection, const 
         Face face = mesh.faces[i];
 
         // Grab our raw vectors
-        Vector3 p1 = mesh.vertices[face.a];
-        Vector3 p2 = mesh.vertices[face.b];
-        Vector3 p3 = mesh.vertices[face.c];
+        Vertex v1 = mesh.vertices[face.a];
+        Vertex v2 = mesh.vertices[face.b];
+        Vertex v3 = mesh.vertices[face.c];
 
-        Vertex v1(Project(screen, p1, transformMatrix));
-        Vertex v2(Project(screen, p2, transformMatrix));
-        Vertex v3(Project(screen, p3, transformMatrix));
+        // Calculate world space positions, we'll use this later for lighting
+        v1.worldPosition = worldMatrix.Transform(v1.position);
+        v2.worldPosition = worldMatrix.Transform(v2.position);
+        v3.worldPosition = worldMatrix.Transform(v3.position);
 
-        // Then calculate world space positions, we'll use this later for normals
-        v1.worldPosition = worldMatrix.Transform(p1);
-        v2.worldPosition = worldMatrix.Transform(p2);
-        v3.worldPosition = worldMatrix.Transform(p3);
+        // Also transform the normals to world space for lighting
+        v1.normal = objectRotation.Transform(v1.normal);
+        v2.normal = objectRotation.Transform(v2.normal);
+        v3.normal = objectRotation.Transform(v3.normal);
 
+        // Project the coordinates
+        v1.position = Project(screen, v1.position, transformMatrix);
+        v2.position = Project(screen, v2.position, transformMatrix);
+        v3.position = Project(screen, v3.position, transformMatrix);
+
+        // Finally rasterize the triangle
         FillTriangle(screen, v1, v2, v3, worldMatrix.Transform(face.normal));
     }
 }
