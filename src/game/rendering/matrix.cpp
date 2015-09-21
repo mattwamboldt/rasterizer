@@ -54,10 +54,11 @@ Vector3 Matrix::GetPosition()
 
 Vector3 Matrix::Transform(const Vector3& v) const
 {
-    // Transforming the vec3 requires converting to homogeneous coordinates first
-    // That's done implicitly by a constructor in the vec4 class
-    Vector4 v4 = Transform(Vector4(v));
-    return Vector3(v4.x / v4.w, v4.y / v4.w, v4.z / v4.w);
+    Vector3 result;
+    result.x = (v.x * values[0][0]) + (v.y * values[0][1]) + (v.z * values[0][2]);
+    result.y = (v.x * values[1][0]) + (v.y * values[1][1]) + (v.z * values[1][2]);
+    result.z = (v.x * values[2][0]) + (v.y * values[2][1]) + (v.z * values[2][2]);
+    return result;
 }
 
 // Matrix transformation is done by multiplying the matrix by a column vector, resulting in another column vector

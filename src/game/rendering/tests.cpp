@@ -24,24 +24,6 @@ struct Point
     int y;
 };
 
-struct Vertex
-{
-    Vertex(){}
-
-    Vertex(const Vector3& v, Color c = Color(0xFFFFFF))
-        : position(v), color(c)
-    {}
-
-    Vertex(float _x, float _y, float _z, Color c = Color(0xFFFFFF))
-        : position(_x, _y, _z), color(c)
-    {}
-
-    Vector3 position;
-    Vector3 normal;
-    Vector3 worldPosition;
-    Color color;
-};
-
 // The naive algorithm for drawing a line is to directly plot the line equation
 // This will have what we call the jaggies, will be spotty on a slope greater than one and wil draw only one
 // dot over and over when at a slope of 0 also it assumes the first point x is less than the second
@@ -223,16 +205,20 @@ void DrawScanline(Device* screen, int y, Vertex va, Vertex vb, Vertex vc, Vertex
     float z1 = lerp(pa.z, pb.z, gradientLeft);
     float z2 = lerp(pc.z, pd.z, gradientRight);
 
+    Color c1 = lerp(va.color, vb.color, gradientLeft);
+    Color c2 = lerp(vc.color, vd.color, gradientRight);
+
     if (startX > endX)
     {
         std::swap(startX, endX);
         std::swap(z1, z2);
+        std::swap(c1, c2);
     }
 
     for (int x = startX; x < endX; ++x)
     {
         float gradientX = (x - startX) / (float)(endX - startX);
-        screen->DrawPoint(x, y, lerp(z1, z2, gradientX), color);
+        screen->DrawPoint(x, y, lerp(z1, z2, gradientX), lerp(c1, c2, gradientX));
     }
 }
 
@@ -241,15 +227,6 @@ void DrawScanline(Device* screen, int y, Vertex va, Vertex vb, Vertex vc, Vertex
 float VertexDirection(Vertex p, Vertex start, Vertex end)
 {
     return (p.position.x - start.position.x) * (end.position.y - start.position.y) - (end.position.x - start.position.x) * (p.position.y - start.position.y);
-}
-
-Vector3 Normal(const Vector3& v1, const Vector3& v2, const Vector3& v3)
-{
-    Vector3 a = v2 - v1;
-    Vector3 b = v3 - v1;
-    Vector3 normal = a.Cross(b);
-    normal.Normalize();
-    return normal;
 }
 
 float LightIntesity(const Vector3& lightSource, const Vector3& position, const Vector3& normal)
@@ -261,12 +238,8 @@ float LightIntesity(const Vector3& lightSource, const Vector3& position, const V
 
 // New algorithm for rasterizing the triangle uses more interpolation to simplify
 // editing later values. It draws the whole trangle instead of a top half bottom half like before
-void FillTriangle(Device* screen, Vertex v1, Vertex v2, Vertex v3)
+void FillTriangle(Device* screen, Vertex v1, Vertex v2, Vertex v3, Vector3& surfaceNormal)
 {
-    // For lighting we calculate the surface normals
-    Vector3 surfaceNormal = Normal(v1.worldPosition, v2.worldPosition, v3.worldPosition);
-    Vector3 centerSurface = (v1.worldPosition + v2.worldPosition + v3.worldPosition) / 3;
-
     // First we need to vertically sort the vertices so v1 is on top
     if (v2.position.y > v3.position.y)
     {
@@ -284,8 +257,9 @@ void FillTriangle(Device* screen, Vertex v1, Vertex v2, Vertex v3)
     }
 
     // Calculate our lighting values
-    Vector3 light(0, 10, 10);
+    Vector3 light(10, 10, 10);
     
+    Vector3 centerSurface = (v1.worldPosition + v2.worldPosition + v3.worldPosition) / 3;
     Color faceColor = Color(0xFFFFFF) * LightIntesity(light, centerSurface, surfaceNormal);
     v1.color *= LightIntesity(light, v1.worldPosition, surfaceNormal);
     v2.color *= LightIntesity(light, v2.worldPosition, surfaceNormal);
@@ -326,7 +300,7 @@ void FillTriangle(Device* screen, Vertex v1, Vertex v2, Vertex v3)
 Vector3 Project(Device* screen, Vector3 v, const Matrix& transform)
 {
     // Trying to prevent weird holes in the geometry by reducing the risk of floating point errors later on
-    Vector3 projectedVector = transform.Transform(v);
+    Vector3 projectedVector = transform.Transform(Vector4(v));
     return Vector3(
         (int)((screen->Width() / 2) * projectedVector.x) + (screen->Width() / 2),
         (int)(-(((screen->Height() / 2) * projectedVector.y) - (screen->Height() / 2))),
@@ -366,7 +340,7 @@ void DrawMesh(Device* screen, const Mesh& mesh, const Matrix& projection, const 
         v2.worldPosition = worldMatrix.Transform(p2);
         v3.worldPosition = worldMatrix.Transform(p3);
 
-        FillTriangle(screen, v1, v2, v3);
+        FillTriangle(screen, v1, v2, v3, worldMatrix.Transform(face.normal));
     }
 }
 

@@ -3,9 +3,19 @@
 
 #include <math.h>
 
-Vector3::Vector3(const Vector4& v) :
-    x(v.x), y(v.y), z(v.z)
-{}
+Vector3::Vector3(const Vector4& v)
+{
+    x = v.x;
+    y = v.y;
+    z = v.z;
+
+    if (v.w != 0.0f && v.w != 1.0f)
+    {
+        x /= v.w;
+        y /= v.w;
+        z /= v.w;
+    }
+}
 
 float Vector3::Length()
 {
