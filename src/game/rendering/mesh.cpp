@@ -76,18 +76,26 @@ void Mesh::CalculateNormals()
     {
         // Grab our face and vertices
         Face& face = faces[i];
-        Vector3& v1 = vertices[face.a];
-        Vector3& v2 = vertices[face.b];
-        Vector3& v3 = vertices[face.c];
+        Vertex& v1 = vertices[face.a];
+        Vertex& v2 = vertices[face.b];
+        Vertex& v3 = vertices[face.c];
 
         // calculate the surface normal
-        Vector3 a = v2 - v1;
-        Vector3 b = v3 - v1;
+        Vector3 a = v2.position - v1.position;
+        Vector3 b = v3.position - v1.position;
         face.normal = a.Cross(b);
         face.normal.Normalize();
 
-        // TODO: Add the surface normal to the vertex normal
+        // Add the normal to the verts
+        v1.normal = v1.normal + face.normal;
+        v2.normal = v2.normal + face.normal;
+        v3.normal = v3.normal + face.normal;
     }
 
-    // TODO: Normalize all of the vertex normals
+    // Normalize all of the vertex normals
+    for (int i = 0; i < vertices.size(); ++i)
+    {
+        vertices[i].normal.Normalize();
+        Debug::console("Normal %f %f %f\n", vertices[i].normal.x, vertices[i].normal.y, vertices[i].normal.z);
+    }
 }

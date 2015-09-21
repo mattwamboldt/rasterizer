@@ -41,7 +41,7 @@ struct Mesh
     // Will read obj format for now
     bool ReadTestFormat(std::string filename);
     void CalculateNormals();
-    std::vector<Vector3> vertices;
+    std::vector<Vertex> vertices;
     std::vector<Face> faces;
     Vector3 position;
     Vector3 rotation;
