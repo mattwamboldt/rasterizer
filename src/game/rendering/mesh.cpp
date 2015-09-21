@@ -52,10 +52,42 @@ bool Mesh::ReadTestFormat(string filename)
             }
         }
         file.close();
+        CalculateNormals();
     }
     else
     {
         Debug::console("Unable to open file %s\n", filename.c_str());
         return false;
     }
+}
+
+Vector3 Normal(const Vector3& v1, const Vector3& v2, const Vector3& v3)
+{
+    Vector3 a = v2 - v1;
+    Vector3 b = v3 - v1;
+    Vector3 normal = a.Cross(b);
+    normal.Normalize();
+    return normal;
+}
+
+void Mesh::CalculateNormals()
+{
+    for (int i = 0; i < faces.size(); ++i)
+    {
+        // Grab our face and vertices
+        Face& face = faces[i];
+        Vector3& v1 = vertices[face.a];
+        Vector3& v2 = vertices[face.b];
+        Vector3& v3 = vertices[face.c];
+
+        // calculate the surface normal
+        Vector3 a = v2 - v1;
+        Vector3 b = v3 - v1;
+        face.normal = a.Cross(b);
+        face.normal.Normalize();
+
+        // TODO: Add the surface normal to the vertex normal
+    }
+
+    // TODO: Normalize all of the vertex normals
 }
