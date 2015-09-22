@@ -1,9 +1,9 @@
 #ifndef RENDERING_MESH_H
 #define RENDERING_MESH_H
 #include <string>
-#include "vector3.h"
+#include "../math/vector3.h"
 #include <vector>
-#include "color.h"
+#include "../color.h"
 
 struct Vertex
 {

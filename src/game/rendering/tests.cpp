@@ -4,14 +4,15 @@
 #include <time.h>
 #include <vector>
 #include "color.h"
-#include "vector3.h"
-#include "matrix.h"
+#include "math/vector3.h"
+#include "math/matrix.h"
 #include "../debug.h"
-#include "mesh.h"
+#include "3d/mesh.h"
 #include "camera.h"
 #include "device.h"
 #include "..\util.h"
 #include <sstream>
+#include "svg\circle.h"
 
 // This is used to run random softawre rasterizing tests
 
@@ -107,50 +108,34 @@ void DrawLineBresenham(Device* screen, const Point& p1, const Point& p2, const C
     }
 }
 
-// The midpoint circle algorithm takes advantage of the fact that circles are highly symetrical
-// We draw all the octants at once until we pass 45 degrees, adjusting the y coordinate
-// using a determinant in the same manner as the bresenham algorithm
-void DrawCircle(Device* screen, const Point& origin, Uint32 radius, Color c)
+void DrawClockHand(Device* screen, const Point& origin, float percent, int length, Color strokeColor)
 {
-    int determinant = 3 - 2 * radius;
-    int x = 0;
-    int y = radius;
-
-    while (x < y)
-    {
-        screen->DrawPoint(origin.x + x, origin.y + y, c);
-        screen->DrawPoint(origin.x + x, origin.y - y, c);
-        screen->DrawPoint(origin.x - x, origin.y + y, c);
-        screen->DrawPoint(origin.x - x, origin.y - y, c);
-        screen->DrawPoint(origin.x + y, origin.y + x, c);
-        screen->DrawPoint(origin.x + y, origin.y - x, c);
-        screen->DrawPoint(origin.x - y, origin.y + x, c);
-        screen->DrawPoint(origin.x - y, origin.y - x, c);
-
-        if (determinant < 0)
-        {
-            determinant += (4 * x) + 6;
-        }
-        else
-        {
-            determinant += 4 * (x - y) + 10;
-            --y;
-        }
-
-        ++x;
-    }
+	Point edge;
+	edge.x = origin.x + length * cos(percent * 2 * M_PI);
+	edge.y = origin.y + length * sin(percent * 2 * M_PI);
+	DrawLineBresenham(screen, origin, edge, strokeColor);
 }
 
-void DrawClock(Device* screen, const Point& origin, Color c)
+void DrawClock(Device* screen, const Point& origin, Color strokeColor, Color backingColor)
 {
-	time_t currtime = time(NULL);
-	float currsecond = (currtime % 60) / 60.0f;
+	FillCircle(screen, origin.x, origin.y, 50, backingColor);
+	StrokeCircle(screen, origin.x, origin.y, 50, strokeColor);
 
-	Point edge;
-	edge.x = origin.x + 100 * cos(currsecond * 2 * M_PI);
-	edge.y = origin.y + 100 * sin(currsecond * 2 * M_PI);
-	DrawLineBresenham(screen, origin, edge, c);
-    DrawCircle(screen, origin, 100, c);
+	time_t currtime = time(NULL);
+	tm* localTime = localtime(&currtime);
+
+	const int secondHandLength = 35;
+	const int minuteHandLength = 45;
+	const int hourHandLength = 25;
+
+	float currsecond = localTime->tm_sec / 60.0f;
+	DrawClockHand(screen, origin, currsecond + 0.75f, secondHandLength, strokeColor);
+
+	float currminute = localTime->tm_min / 60.0f;
+	DrawClockHand(screen, origin, currminute + 0.75f, minuteHandLength, strokeColor);
+
+	float currhour = localTime->tm_hour / 12.0f;
+	DrawClockHand(screen, origin, currhour + 0.75f, hourHandLength, strokeColor);
 }
 
 void DrawTriangle(Device* screen, const Point& p1, const Point& p2, const Point& p3, Color c)
@@ -370,9 +355,11 @@ void Draw(Device* screen, Mesh& mesh)
     // TODO: Figure out how to calculate these values from a camera frustum or something
     Matrix projectionMatrix;
     // projectionMatrix.BuildOrthographicProjection(-3, 3, -4, 4, 0, 2); // Ortho version test
-    projectionMatrix.BuildPerspectiveProjection(-3, 3, -4, 4, 1, 100); // Ortho version test
+    projectionMatrix.BuildPerspectiveProjection(-3, 3, -4, 4, 1, 100); // Perspective version test
 
     DrawMesh(screen, mesh, projectionMatrix, viewMatrix);
+
+	DrawClock(screen, Point(55, 55), Color(0xFFFFFFFF), Color(0xFF1c1ccc));
 }
 
 /// Stuff to do later

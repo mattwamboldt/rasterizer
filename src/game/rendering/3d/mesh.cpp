@@ -1,7 +1,7 @@
 #include "mesh.h"
 #include <fstream>
 #include <sstream>
-#include "..\debug.h"
+#include "..\..\debug.h"
 
 using namespace std;
 
@@ -96,6 +96,5 @@ void Mesh::CalculateNormals()
     for (int i = 0; i < vertices.size(); ++i)
     {
         vertices[i].normal.Normalize();
-        Debug::console("Normal %f %f %f\n", vertices[i].normal.x, vertices[i].normal.y, vertices[i].normal.z);
     }
 }

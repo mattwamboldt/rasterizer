@@ -100,30 +100,33 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="game\rendering\color.cpp" />
+    <ClCompile Include="game\rendering\svg\circle.cpp" />
     <ClCompile Include="game\util.cpp" />
     <ClCompile Include="game\debug.cpp" />
     <ClCompile Include="game\main.cpp" />
     <ClCompile Include="game\perftimer.cpp" />
     <ClCompile Include="game\rendering\device.cpp" />
-    <ClCompile Include="game\rendering\matrix.cpp" />
-    <ClCompile Include="game\rendering\mesh.cpp" />
+    <ClCompile Include="game\rendering\math\matrix.cpp" />
+    <ClCompile Include="game\rendering\3d\mesh.cpp" />
     <ClCompile Include="game\rendering\tests.cpp" />
-    <ClCompile Include="game\rendering\vector3.cpp" />
-    <ClCompile Include="game\rendering\vector4.cpp" />
+    <ClCompile Include="game\rendering\math\vector3.cpp" />
+    <ClCompile Include="game\rendering\math\vector4.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="game\clock.h" />
     <ClInclude Include="game\rendering\camera.h" />
     <ClInclude Include="game\rendering\color.h" />
     <ClInclude Include="game\rendering\device.h" />
-    <ClInclude Include="game\rendering\matrix.h" />
-    <ClInclude Include="game\rendering\mesh.h" />
+    <ClInclude Include="game\rendering\math\matrix.h" />
+    <ClInclude Include="game\rendering\3d\mesh.h" />
+    <ClInclude Include="game\rendering\svg\circle.h" />
     <ClInclude Include="game\rendering\tests.h" />
-    <ClInclude Include="game\rendering\vector3.h" />
+    <ClInclude Include="game\rendering\math\vector3.h" />
     <ClInclude Include="game\util.h" />
     <ClInclude Include="game\debug.h" />
     <ClInclude Include="game\perftimer.h" />
-    <ClInclude Include="game\rendering\vector4.h" />
+    <ClInclude Include="game\rendering\math\vector4.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
