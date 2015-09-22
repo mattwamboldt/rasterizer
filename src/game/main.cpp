@@ -4,7 +4,7 @@
 #include "perftimer.h"
 
 #include "rendering\tests.h"
-#include "rendering\mesh.h"
+#include "rendering\3d\mesh.h"
 #include "rendering\device.h"
 
 const int SCREEN_WIDTH = 1024;
@@ -106,8 +106,6 @@ bool init()
 
 void close()
 {
-	SDL_CloseAudio();
-
     if (gDevice)
     {
         delete gDevice;

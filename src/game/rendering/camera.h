@@ -1,7 +1,7 @@
 #ifndef RENDERING_CAMERA_H
 #define RENDERING_CAMERA_H
 
-#include "vector3.h"
+#include "math/vector3.h"
 
 struct Camera
 {

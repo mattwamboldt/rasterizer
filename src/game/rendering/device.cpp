@@ -28,6 +28,15 @@ void Device::Clear(Color color)
     }
 }
 
+Color Device::GetPixel(int x, int y)
+{
+	Uint32 index = x + y * renderWidth;
+	Uint32* pixels = (Uint32 *)screen->pixels;
+	Color ret;
+	SDL_GetRGBA(pixels[index], screen->format, &(ret.r), &(ret.g), &(ret.b), &(ret.a));
+	return ret;
+}
+
 // Draws a pixel to the screen ignoring the depthbuffer
 void Device::PutPixel(int x, int y, Color c)
 {
