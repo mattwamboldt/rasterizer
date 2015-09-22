@@ -130,7 +130,7 @@ void Matrix::BuildYawPitchRoll(const float yawRadians, const float pitchRadians,
     Matrix rollMat;
     rollMat.BuildRotationZ(rollRadians);
 
-    *this = rollMat * pitchMat * yawMat;
+    *this = yawMat * (pitchMat * rollMat);
 }
 
 // Note the order of the cross products matter so if things are upside down or
