@@ -3,8 +3,8 @@
 
 #include <SDL/SDL.h>
 #include "color.h"
-#include "vector3.h"
-#include "matrix.h"
+#include "math/vector3.h"
+#include "math/matrix.h"
 
 class Device
 {
@@ -14,6 +14,9 @@ public:
 
     // Clears the screen buffer to the given color
     void Clear(Color color);
+
+	// Grabs the color from the screen at the given coordinates
+	Color GetPixel(int x, int y);
 
     // Puts a pixel on the screen ignoring the depthbuffer and clip checks
     void PutPixel(int x, int y, Color c = Color(0xFFFFFF));

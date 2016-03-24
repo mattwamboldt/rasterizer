@@ -1,6 +1,6 @@
 #include "matrix.h"
 #include <math.h>
-#include "../debug.h"
+#include "../../debug.h"
 
 // IMPORTANT: Our matrices are stored in row major order, meaning the first index will give us a row
 // This means to access element i j of the matrix we use values[i][j]
@@ -49,7 +49,7 @@ void Matrix::SetPosition(const Vector4& pos)
 
 Vector3 Matrix::GetPosition()
 {
-    return Vector3(values[0][1], values[1][3], values[2][3]);
+    return Vector3(values[0][3], values[1][3], values[2][3]);
 }
 
 Vector3 Matrix::Transform(const Vector3& v) const
@@ -147,7 +147,7 @@ void Matrix::BuildLookAt(const Vector3& eye, const Vector3& at, const Vector3& u
     Vector3 xaxis = up.Cross(zaxis);
     xaxis.Normalize();
 
-    // We that we know forward and left right, we can get up in camera space
+    // Now that we know forward and left right, we can get up in camera space
     // using another cross product
     Vector3 yaxis = zaxis.Cross(xaxis);
     yaxis.Normalize();

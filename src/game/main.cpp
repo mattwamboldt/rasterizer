@@ -1,11 +1,10 @@
 #include <SDL/SDL.h>
 #include <stdio.h>
 #include "debug.h"
-#include "audio/audio.h"
 #include "perftimer.h"
 
 #include "rendering\tests.h"
-#include "rendering\mesh.h"
+#include "rendering\3d\mesh.h"
 #include "rendering\device.h"
 
 const int SCREEN_WIDTH = 1024;
@@ -18,7 +17,6 @@ SDL_Window* gWindow = NULL;
 SDL_Surface* gScreenSurface = NULL;
 
 //The image we will load and show on the screen
-SDL_Surface* gHelloWorld = NULL;
 Mesh gMesh;
 Device* gDevice;
 
@@ -49,50 +47,22 @@ int main( int argc, char* args[] )
             //Event handler
             SDL_Event e;
 
-			if (Audio::Init())
+			//While application is running
+			while( !quit )
 			{
-				SDL_Rect imgRect;
-				SDL_Rect screenRect;
-				SDL_GetClipRect(gHelloWorld, &imgRect);
-				SDL_GetClipRect(gScreenSurface, &screenRect);
-
-				//While application is running
-				while( !quit )
+				//Handle events on queue
+				while( SDL_PollEvent( &e ) != 0 )
 				{
-					//Handle events on queue
-					while( SDL_PollEvent( &e ) != 0 )
+					//User requests quit
+					if( e.type == SDL_QUIT )
 					{
-						//User requests quit
-						if( e.type == SDL_QUIT )
-						{
-							quit = true;
-						}
-						else if( e.type == SDL_KEYDOWN )
-						{
-							Audio::MidiEvent midiEvent;
-							midiEvent.eventCode = Audio::MIDI_NOTE_ON << 4;
-							midiEvent.param1 = e.key.keysym.sym;
-							midiEvent.param2 = 64;
-							Audio::midiController.ProcessEvent(midiEvent);
-						}
-						else if( e.type == SDL_KEYUP )
-						{
-							Audio::MidiEvent midiEvent;
-							midiEvent.eventCode = Audio::MIDI_NOTE_OFF << 4;
-							midiEvent.param1 = e.key.keysym.sym;
-							midiEvent.param2 = 64;
-							Audio::midiController.ProcessEvent(midiEvent);
-						}
+						quit = true;
 					}
-					
-                    gDevice->Clear(Color(0x000000));
-                    Draw(gDevice, gMesh);
-					SDL_UpdateWindowSurface( gWindow );
 				}
-			}
-			else
-			{
-				Debug::console(Debug::AUDIO, "Failed to init proper audio device\n");
+					
+                gDevice->Clear(Color(0x000000));
+                Draw(gDevice, gMesh);
+				SDL_UpdateWindowSurface( gWindow );
 			}
         }
     }
@@ -141,14 +111,6 @@ bool loadMedia()
     //Loading success flag
     bool success = true;
 
-    //Load splash image
-    gHelloWorld = SDL_LoadBMP( "data/cat.bmp" );
-    if( gHelloWorld == NULL )
-    {
-        Debug::console("Unable to load image %s! SDL Error: %s\n", "data/cat.bmp", SDL_GetError() );
-        success = false;
-    }
-
     if (!gMesh.ReadTestFormat("data/suzanne.obj"))
     {
         Debug::console("Unable to load obj file %s! SDL Error: %s\n", "data/suzanne.obj", SDL_GetError());
@@ -160,12 +122,7 @@ bool loadMedia()
 
 void close()
 {
-	SDL_CloseAudio();
-
     //Deallocate surface
-    SDL_FreeSurface( gHelloWorld );
-    gHelloWorld = NULL;
-
     if (gDevice)
     {
         delete gDevice;
