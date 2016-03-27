@@ -51,7 +51,7 @@ public:
 
     // Uses a location and target to construct a transformation matrix to bring everything into a camera space
     // The look at matrix finds the direction the camera is looking and calculates a new coordinate system
-    // from that initial angle and the up vector. It then adds concatenates a translation to -eye with a rotation
+    // from that initial angle and the up vector. It then concatenates a translation to -eye with a rotation
     // into the cameras coordinate system
     void BuildLookAt(const Vector3& eye, const Vector3& at, const Vector3& up);
 

@@ -110,6 +110,9 @@ void DrawLineBresenham(Device* screen, const Point& p1, const Point& p2, const C
 
 void DrawClockHand(Device* screen, const Point& origin, float percent, int length, Color strokeColor)
 {
+	// 0% in circle terms is a line going right to 3 o'clock, to make it go up to noon, we add 75%
+	percent += 0.75f;
+
 	Point edge;
 	edge.x = origin.x + length * cos(percent * 2 * M_PI);
 	edge.y = origin.y + length * sin(percent * 2 * M_PI);
@@ -128,14 +131,17 @@ void DrawClock(Device* screen, const Point& origin, Color strokeColor, Color bac
 	const int minuteHandLength = 45;
 	const int hourHandLength = 25;
 
+	// Render the Second hand
 	float currsecond = localTime->tm_sec / 60.0f;
-	DrawClockHand(screen, origin, currsecond + 0.75f, secondHandLength, strokeColor);
+	DrawClockHand(screen, origin, currsecond, secondHandLength, strokeColor);
 
+	// Render the Minute hand
 	float currminute = localTime->tm_min / 60.0f;
-	DrawClockHand(screen, origin, currminute + 0.75f, minuteHandLength, strokeColor);
+	DrawClockHand(screen, origin, currminute, minuteHandLength, strokeColor);
 
+	// Render the Hour hand
 	float currhour = localTime->tm_hour / 12.0f;
-	DrawClockHand(screen, origin, currhour + 0.75f, hourHandLength, strokeColor);
+	DrawClockHand(screen, origin, currhour, hourHandLength, strokeColor);
 }
 
 void DrawTriangle(Device* screen, const Point& p1, const Point& p2, const Point& p3, Color c)
@@ -173,26 +179,40 @@ Color lerp(Color start, Color end, float gradient)
     );
 }
 
+// This function draws a scanline between four vertices that are sorted along the y axis
+// It uses multiple lerps to interpolate values in the vertices, such as colour, depth, and texture mapping
+// In hardware terms, this would set up and call your pixel shader
 void DrawScanline(Device* screen, int y, Vertex va, Vertex vb, Vertex vc, Vertex vd, Color color)
 {
+	// A and B form a line, C and D form a line
     const Vector3& pa = va.position;
     const Vector3& pb = vb.position;
     const Vector3& pc = vc.position;
     const Vector3& pd = vd.position;
 
-    // Note this isn't the fatest way as these gradients could be found using precomputation and additions
+	// We then find out what percentage of the way we are vertically along each line given the y value
+    // Note: This isn't the fatest way as these gradients could be found using precomputation and additions
+	// that would mean fusing the scanline function with it's containing function or passing way more params
     float gradientLeft = pa.y != pb.y ? (y - pa.y) / (pb.y - pa.y) : 1;
     float gradientRight = pc.y != pd.y ? (y - pc.y) / (pd.y - pc.y) : 1;
 
+	// With those percentages in hand we can use linear interpolation to find the corresponing values along each
+	// line for our given y, at a base level we calculate the x co-ordinate for drawing the line
     int startX = (int)lerp(pa.x, pb.x, gradientLeft);
     int endX = (int)lerp(pc.x, pd.x, gradientRight);
 
+	// We also calculate the z values, which are used for depth buffer testing
     float z1 = lerp(pa.z, pb.z, gradientLeft);
     float z2 = lerp(pc.z, pd.z, gradientRight);
 
+	// We also calculate the color values, which are used for lighting an object
     Color c1 = lerp(va.color, vb.color, gradientLeft);
     Color c2 = lerp(vc.color, vd.color, gradientRight);
 
+	// Here's where you'd put various mapping coordinate calculations
+	// Things like texture maps, bump maps, normal maps, etc
+
+	// This makes sure we're drawing left to right
     if (startX > endX)
     {
         std::swap(startX, endX);
@@ -200,6 +220,7 @@ void DrawScanline(Device* screen, int y, Vertex va, Vertex vb, Vertex vc, Vertex
         std::swap(c1, c2);
     }
 
+	// Then we draw our pixels, which is the equivalent of a pixel shader
     for (int x = startX; x < endX; ++x)
     {
         float gradientX = (x - startX) / (float)(endX - startX);
@@ -307,6 +328,8 @@ void DrawMesh(Device* screen, const Mesh& mesh, const Matrix& projection, const 
     // Also in a right handed system so multiplies go right to left
     Matrix transformMatrix = projection * (view * worldMatrix);
 
+	// This can be thought of as our vertex shader
+	// It'll use the variables available to modify each vertex, before they are passed to the scanline function
     for (int i = 0; i < mesh.faces.size(); ++i)
     {
         Face face = mesh.faces[i];
