@@ -179,6 +179,14 @@ void Matrix::BuildOrthographicProjection(float bottom, float top, float left, fl
     values[3][3] = 1;
 }
 
+void Matrix::BuildPerspectiveProjection(float fov, float aspect, float near, float far)
+{
+	float tangent = tanf(fov * 0.5f * (M_PI / 180.0));
+	float halfHeight = tangent * near;
+	float halfWidth = halfHeight * aspect;
+	BuildPerspectiveProjection(-halfHeight, halfHeight, -halfWidth, halfWidth, near, far);
+}
+
 void Matrix::BuildPerspectiveProjection(float bottom, float top, float left, float right, float near, float far)
 {
     values[0][0] = (2 * near) / (right - left);
