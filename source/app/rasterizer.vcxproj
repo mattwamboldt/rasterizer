@@ -12,7 +12,7 @@
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{8D54D644-ADDD-4533-8B51-25CE493145DF}</ProjectGuid>
-    <RootNamespace>Experiment</RootNamespace>
+    <RootNamespace>rasterizer</RootNamespace>
     <Keyword>Win32Proj</Keyword>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -41,19 +41,19 @@
     <_ProjectFileVersion>12.0.30501.0</_ProjectFileVersion>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <OutDir>..\test\</OutDir>
-    <IntDir>..\obj\$(Configuration)\</IntDir>
+    <OutDir>$(SolutionDir)..\test\</OutDir>
+    <IntDir>$(SolutionDir)..\obj\$(Configuration)\</IntDir>
     <LinkIncremental>true</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <OutDir>..\bin\</OutDir>
-    <IntDir>..\obj\$(Configuration)\</IntDir>
+    <OutDir>$(SolutionDir)..\bin\</OutDir>
+    <IntDir>$(SolutionDir)..\obj\$(Configuration)\</IntDir>
     <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -64,15 +64,15 @@
     </ClCompile>
     <Link>
       <AdditionalDependencies>SDL2.lib;SDL2main.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
       <TargetMachine>MachineX86</TargetMachine>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /d /f /y /s /i ..\data $(OutDir)data\
-xcopy /d /f /y /s dll "$(OutDir)"
+      <Command>xcopy /d /f /y /s /i $(SolutionDir)..\data $(OutDir)data\
+xcopy /d /f /y /s $(SolutionDir)dll "$(OutDir)"
 </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
@@ -80,7 +80,7 @@ xcopy /d /f /y /s dll "$(OutDir)"
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -90,7 +90,7 @@ xcopy /d /f /y /s dll "$(OutDir)"
     </ClCompile>
     <Link>
       <AdditionalDependencies>SDL2.lib;SDL2main.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
       <OptimizeReferences>true</OptimizeReferences>
@@ -98,39 +98,39 @@ xcopy /d /f /y /s dll "$(OutDir)"
       <TargetMachine>MachineX86</TargetMachine>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /d /f /y /s /i ..\data $(OutDir)data\
-xcopy /d /f /y /s dll "$(OutDir)"
+      <Command>xcopy /d /f /y /s /i $(SolutionDir)..\data $(OutDir)data\
+xcopy /d /f /y /s $(SolutionDir)dll "$(OutDir)"
 </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="game\rendering\color.cpp" />
-    <ClCompile Include="game\rendering\svg\circle.cpp" />
-    <ClCompile Include="game\util.cpp" />
-    <ClCompile Include="game\debug.cpp" />
-    <ClCompile Include="game\main.cpp" />
-    <ClCompile Include="game\perftimer.cpp" />
-    <ClCompile Include="game\rendering\device.cpp" />
-    <ClCompile Include="game\rendering\math\matrix.cpp" />
-    <ClCompile Include="game\rendering\3d\mesh.cpp" />
-    <ClCompile Include="game\rendering\tests.cpp" />
-    <ClCompile Include="game\rendering\math\vector3.cpp" />
-    <ClCompile Include="game\rendering\math\vector4.cpp" />
+    <ClCompile Include="rendering\color.cpp" />
+    <ClCompile Include="rendering\svg\circle.cpp" />
+    <ClCompile Include="util.cpp" />
+    <ClCompile Include="debug.cpp" />
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="perftimer.cpp" />
+    <ClCompile Include="rendering\device.cpp" />
+    <ClCompile Include="rendering\math\matrix.cpp" />
+    <ClCompile Include="rendering\3d\mesh.cpp" />
+    <ClCompile Include="rendering\tests.cpp" />
+    <ClCompile Include="rendering\math\vector3.cpp" />
+    <ClCompile Include="rendering\math\vector4.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="game\clock.h" />
-    <ClInclude Include="game\rendering\camera.h" />
-    <ClInclude Include="game\rendering\color.h" />
-    <ClInclude Include="game\rendering\device.h" />
-    <ClInclude Include="game\rendering\math\matrix.h" />
-    <ClInclude Include="game\rendering\3d\mesh.h" />
-    <ClInclude Include="game\rendering\svg\circle.h" />
-    <ClInclude Include="game\rendering\tests.h" />
-    <ClInclude Include="game\rendering\math\vector3.h" />
-    <ClInclude Include="game\util.h" />
-    <ClInclude Include="game\debug.h" />
-    <ClInclude Include="game\perftimer.h" />
-    <ClInclude Include="game\rendering\math\vector4.h" />
+    <ClInclude Include="clock.h" />
+    <ClInclude Include="rendering\camera.h" />
+    <ClInclude Include="rendering\color.h" />
+    <ClInclude Include="rendering\device.h" />
+    <ClInclude Include="rendering\math\matrix.h" />
+    <ClInclude Include="rendering\3d\mesh.h" />
+    <ClInclude Include="rendering\svg\circle.h" />
+    <ClInclude Include="rendering\tests.h" />
+    <ClInclude Include="rendering\math\vector3.h" />
+    <ClInclude Include="util.h" />
+    <ClInclude Include="debug.h" />
+    <ClInclude Include="perftimer.h" />
+    <ClInclude Include="rendering\math\vector4.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
