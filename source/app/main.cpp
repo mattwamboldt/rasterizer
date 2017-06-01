@@ -7,6 +7,13 @@
 #include "rendering\3d\mesh.h"
 #include "rendering\device.h"
 
+FILE _iob[] = { *stdin, *stdout, *stderr };
+
+extern "C" FILE * __cdecl __iob_func(void)
+{
+	return _iob;
+}
+
 const int SCREEN_WIDTH = 800;
 const int SCREEN_HEIGHT = 600;
 

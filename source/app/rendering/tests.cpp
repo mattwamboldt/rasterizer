@@ -366,7 +366,7 @@ void Draw(Device* screen, Mesh& mesh)
     float currsecond = ((int)(SDL_GetTicks() * rotationsPerSecond) % 1000) / 1000.0f;
 
     Camera camera;
-    camera.position = Vector3(0.0f, 0.0f, 2.0f);
+    camera.position = Vector3(0.0f, 0.0f, 10.0f);
     camera.target = Vector3(0.0f, 0.0f, 0.0f);
 
     mesh.rotation.y = 2 * M_PI * currsecond;
@@ -377,8 +377,12 @@ void Draw(Device* screen, Mesh& mesh)
 
     // TODO: Figure out how to calculate these values from a camera frustum or something
     Matrix projectionMatrix;
-    // projectionMatrix.BuildOrthographicProjection(-3, 3, -4, 4, 0, 2); // Ortho version test
-    projectionMatrix.BuildPerspectiveProjection(-3, 3, -4, 4, 1, 100); // Perspective version test
+	// fov version
+	float fov = 60.0f;
+	float aspect = (float)screen->Width() / (float)screen->Height();
+	//projectionMatrix.BuildPerspectiveProjection(fov, aspect, 10, 100); // Perspective version test
+    projectionMatrix.BuildOrthographicProjection(-3, 3, -4, 4, 0, 2); // Ortho version test
+    //projectionMatrix.BuildPerspectiveProjection(-3, 3, -4, 4, 1, 100); // Perspective version test
 
     DrawMesh(screen, mesh, projectionMatrix, viewMatrix);
 

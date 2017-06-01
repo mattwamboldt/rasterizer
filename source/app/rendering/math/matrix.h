@@ -59,6 +59,7 @@ public:
     // They use a bounding box like openGL mening they may not be the best for accuracy depending on distance or efficiency
     void BuildOrthographicProjection(float bottom, float top, float left, float right, float near, float far);
     void BuildPerspectiveProjection(float bottom, float top, float left, float right, float near, float far);
+	void BuildPerspectiveProjection(float fov, float aspect, float near, float far);
 
     // Used for debugging
     void console() const;
