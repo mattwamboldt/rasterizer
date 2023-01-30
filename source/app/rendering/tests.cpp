@@ -381,7 +381,7 @@ void Draw(Device* screen, Mesh& mesh)
 	float fov = 60.0f;
 	float aspect = (float)screen->Width() / (float)screen->Height();
 	//projectionMatrix.BuildPerspectiveProjection(fov, aspect, 10, 100); // Perspective version test
-    projectionMatrix.BuildOrthographicProjection(-3, 3, -4, 4, 0, 2); // Ortho version test
+    projectionMatrix.BuildOrthographicProjection(-1.5, 1.5, -2, 2, 0, 2); // Ortho version test
     //projectionMatrix.BuildPerspectiveProjection(-3, 3, -4, 4, 1, 100); // Perspective version test
 
     DrawMesh(screen, mesh, projectionMatrix, viewMatrix);
